@@ -6,9 +6,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.Extended;
-using MonoGame.Extended.Collisions;
-using MonoGame.Aseprite.Graphics;
-using MonoGame.Aseprite.Documents;
 
 using MonoGame.Extended.Entities;
 using MonoGame.Extended.Tiled;
@@ -58,7 +55,6 @@ namespace Retroherz
 
             //ShadowCasting.ShadowCasting.ConvertTileMapToPolyMap(_tiledMap);
 
-
             /* !EXPERIMENTAL */
 
             base.LoadContent();
@@ -72,9 +68,10 @@ namespace Retroherz
 
             _player = _world.CreateEntity();
             _player.Attach(new PlayerComponent());
-            _player.Attach(new AnimatedSprite(asepriteDocument));
-            _player.Attach(new RectangularColliderComponent(position: position, size: new Size2(16, 16)));
-            _player.Attach(new CircularColliderComponent(position: position, radius: 16.0f));
+            _player.Attach(new SpriteComponent(ref asepriteDocument));
+            _player.Attach(new ColliderComponent(new RectangleF(Point2.Zero, new Size2(20, 20))));
+            _player.Attach(new RectangularColliderComponent(position: position, size: new Size2(32, 32f)));
+            //_player.Attach(new CircularColliderComponent(position: position, radius: 16f));
             _player.Attach(new PhysicsComponent(position: position));
 
             return _player.Id;

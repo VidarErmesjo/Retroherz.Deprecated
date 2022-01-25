@@ -16,28 +16,31 @@ namespace Retroherz.Systems
 {
     public class PlayerSystem : EntityUpdateSystem
     {
-        //private ComponentMapper<PlayerComponent> _playerMapper;
-        //private ComponentMapper<SuperSprite> _spriteMapper;
         private readonly OrthographicCamera _camera;
-        private ComponentMapper<AnimatedSprite> _spriteComponentMapper;
+        private ComponentMapper<SpriteComponent> _spriteComponentMapper;
+        private ComponentMapper<CircularColliderComponent> _circularComponentMapper;
         private ComponentMapper<PlayerComponent> _playerComponentMapper;
         private ComponentMapper<RectangularColliderComponent> _rectangularColliderComponentMapper;
         private ComponentMapper<PhysicsComponent> _physicsComponentMapper;
 
         // PlayerSystem??
         public PlayerSystem(OrthographicCamera camera)
-            : base(Aspect.All(
-                typeof(AnimatedSprite),
-                typeof(PlayerComponent),
-                typeof(RectangularColliderComponent),
-                typeof(PhysicsComponent)))
+            : base(Aspect
+                .All(
+                    typeof(SpriteComponent),
+                    typeof(PlayerComponent),
+                    typeof(PhysicsComponent))
+                .One(
+                    typeof(CircularColliderComponent),
+                    typeof(RectangularColliderComponent)))
         {
             _camera = camera;
         }
 
         public override void Initialize(IComponentMapperService mapperService)
         {
-            _spriteComponentMapper = mapperService.GetMapper<AnimatedSprite>();
+            _spriteComponentMapper = mapperService.GetMapper<SpriteComponent>();
+            _circularComponentMapper = mapperService.GetMapper<CircularColliderComponent>();
             _playerComponentMapper = mapperService.GetMapper<PlayerComponent>();
             _rectangularColliderComponentMapper = mapperService.GetMapper<RectangularColliderComponent>();
             _physicsComponentMapper = mapperService.GetMapper<PhysicsComponent>();
@@ -52,13 +55,15 @@ namespace Retroherz.Systems
                 var player = _playerComponentMapper.Get(entityId);
                 var sprite = _spriteComponentMapper.Get(entityId);
                 var physics = _physicsComponentMapper.Get(entityId);
+                var circularCollider = _circularComponentMapper.Get(entityId);
                 var collider = _rectangularColliderComponentMapper.Get(entityId);
 
                 // Calculate velocity from direction
                 if (mouseState.LeftButton == ButtonState.Pressed)
                 {
                     physics.Direction = Vector2.Normalize(_camera.ScreenToWorld(
-                        new Vector2(mouseState.X, mouseState.Y)) - physics.Position - collider.Size / 2);
+                        //new Vector2(mouseState.X, mouseState.Y)) - physics.Position - collider.Size / 2);
+                        new Vector2(mouseState.X, mouseState.Y)) - physics.Position - Vector2.One * collider.Size / 2);
 
                     physics.Velocity += physics.Direction * player.MaxSpeed * ((float)deltaTime);
                     //MathHelper.Clamp(physics.Velocity.X, 0, 1);
@@ -69,10 +74,11 @@ namespace Retroherz.Systems
                     physics.Velocity = new Vector2(
                         MathHelper.LerpPrecise(physics.Velocity.X, 0, 1f * ((float)deltaTime)),
                         MathHelper.LerpPrecise(physics.Velocity.Y, 0, 1f * ((float)deltaTime)));
-                    
+
                     sprite.Play("Idle");
                 }
                 // Animate
+                //sprite.Position = physics.Position;
                 sprite.Update(gameTime);
 
                 // Update position
@@ -84,9 +90,22 @@ namespace Retroherz.Systems
                 else
                 {
                     physics.Position += physics.Velocity * deltaTime;
+                    collider.Velocity = physics.Velocity;
                 }
 
                 collider.hasCollided = false;
+
+                /*if(circularCollider.hasCollided)
+                {
+                    physics.Position = circularCollider.Position;
+                    //physics.Velocity = Vector2.Zero; // -circularCollider.Velocity; knockback-ish
+                }
+                else
+                {
+                    physics.Position += physics.Velocity * deltaTime;
+                }
+
+                circularCollider.hasCollided = false;*/
 
                 // Update camera position
                 _camera.LookAt(physics.Position);

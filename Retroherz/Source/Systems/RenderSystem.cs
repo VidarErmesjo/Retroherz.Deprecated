@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Aseprite.Graphics;
@@ -14,11 +15,11 @@ namespace Retroherz.Systems
         private readonly SpriteBatch _spriteBatch;
         private readonly GraphicsDevice _graphicsDevice;
         private readonly OrthographicCamera _camera;
-        private ComponentMapper<AnimatedSprite> _animatedSpriteMapper;
+        private ComponentMapper<SpriteComponent> _spriteComponentMapper;
         private ComponentMapper<PhysicsComponent> _physicsComponentMapper;
 
         public RenderSystem(GraphicsDevice graphicsDevice, OrthographicCamera camera)
-            : base(Aspect.All(typeof(AnimatedSprite), typeof(PhysicsComponent)))
+            : base(Aspect.All(typeof(SpriteComponent), typeof(PhysicsComponent)))
         {
             _camera = camera;
             _graphicsDevice = graphicsDevice;
@@ -27,7 +28,7 @@ namespace Retroherz.Systems
 
         public override void Initialize(IComponentMapperService mapperService)
         {
-            _animatedSpriteMapper = mapperService.GetMapper<AnimatedSprite>();
+            _spriteComponentMapper = mapperService.GetMapper<SpriteComponent>();
             _physicsComponentMapper = mapperService.GetMapper<PhysicsComponent>();
         }
 
@@ -41,7 +42,7 @@ namespace Retroherz.Systems
 
             foreach(var entityId in ActiveEntities)
             {
-                var sprite = _animatedSpriteMapper.Get(entityId);
+                var sprite = _spriteComponentMapper.Get(entityId);
                 var physics = _physicsComponentMapper.Get(entityId);
 
                 sprite.Position = physics.Position;

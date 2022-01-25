@@ -11,10 +11,26 @@ namespace Retroherz.Components
 {
     public class RectangularColliderComponent
     {
-        public bool hasCollided { get; set; }
+        private enum Type
+        {
+            Stop,
+            Slide,
+            Bounce
+        }
+
+        private enum Side
+        {
+            North,
+            East,
+            South,
+            West
+        }
+
+        public bool hasCollided = false;
         public Vector2 Position { get; set; }
         public Vector2 Velocity { get; set; }
         public readonly Vector2 Size;
+        public readonly Vector2 Center;
         public RectangularColliderComponent[] Contact = new RectangularColliderComponent[4];
 
         public RectangularColliderComponent(
@@ -29,17 +45,17 @@ namespace Retroherz.Components
             Contact[1] = null;
             Contact[2] = null;
             Contact[3] = null;
-            hasCollided = false;
+            Center = new Vector2((position.X + size.X) / 2, (position.Y + size.Y) / 2);
         }
 
         public static void Swap<T>(ref T a, ref T b) => (a, b) = (b, a);
 
         public bool Ray(
             ref RectangularColliderComponent target,
-            float deltaTime,
             ref Vector2 contactPoint,
             ref Vector2 contactNormal,
-            ref float timeHitNear)
+            ref float timeHitNear,
+            float deltaTime)
         {
             // Calculate ray vectors
             Vector2 rayOrigin = this.Position + this.Size / 2;
@@ -90,14 +106,14 @@ namespace Retroherz.Components
 
         // Collides?
         public bool Intersects(
-            ref RectangularColliderComponent obstacle,
-            float deltaTime,
+            RectangularColliderComponent obstacle,
             ref Vector2 contactPoint,
             ref Vector2 contactNormal,
-            ref float contactTime)
+            ref float contactTime,
+            float deltaTime)
         {
             // Check if rectangle is actually moving - we assume rectangles are NOT in collision on start
-            if (this.Velocity.X == 0 && this.Velocity.Y == 0) return false;
+            if (this.Velocity == Vector2.Zero) return false;
 
             // Expand target collider box by source dimensions
             var inflated = new RectangularColliderComponent(
@@ -107,11 +123,11 @@ namespace Retroherz.Components
             
             if (Ray(
                 ref inflated,
-                deltaTime,
                 ref contactPoint,
                 ref contactNormal,
-                ref contactTime))
-                    return (contactTime >= 0.0f && contactTime < 1.0f); // Clamp?
+                ref contactTime,
+                deltaTime))
+                    return (contactTime >= 0.0f && contactTime < 1.0f);
             else 
                 return false;
         }
@@ -122,29 +138,27 @@ namespace Retroherz.Components
         {
             var contactPoint = new Vector2();
             var contactNormal = new Vector2();
-
-            float contactTime = 0.0f;
+            var contactTime = 0.0f;
 
             if (Intersects(
-                ref obstacle,
-                deltaTime,
+                obstacle,
                 ref contactPoint,
                 ref contactNormal,
-                ref contactTime))
+                ref contactTime,
+                deltaTime))
             {
-                this.Contact[0] = contactNormal.Y > 0 ? obstacle : null;
-                this.Contact[1] = contactNormal.X < 0 ? obstacle : null;
-                this.Contact[2] = contactNormal.Y < 0 ? obstacle : null;
-                this.Contact[3] = contactNormal.X > 0 ? obstacle : null;
+                this.Contact[0] = contactNormal.Y > 0 ? obstacle : null;    // UP
+                this.Contact[1] = contactNormal.X < 0 ? obstacle : null;    // LEFT
+                this.Contact[2] = contactNormal.Y < 0 ? obstacle : null;    // DOWN
+                this.Contact[3] = contactNormal.X > 0 ? obstacle : null;    // RIGHT
 
                 this.Velocity += contactNormal * new Vector2(
                     MathF.Abs(this.Velocity.X),
                     MathF.Abs(this.Velocity.Y)) * (1 - contactTime);
 
-                this.hasCollided = true;
-
                 return true;
             }
+
             return false;
         }
 
