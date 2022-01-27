@@ -13,7 +13,6 @@ namespace Retroherz.Components
 {
     public class SpriteComponent : SimpleGameComponent
     {
-        private bool _isDisposed = false;
         private readonly AnimatedSprite _animatedSprite;
 
         public Vector2 Position
@@ -43,13 +42,14 @@ namespace Retroherz.Components
         public SpriteComponent(ref AsepriteDocument asepriteDocument)
         {
             _animatedSprite = new AnimatedSprite(asepriteDocument);
-            this.Origin = new Vector2(_animatedSprite.Width, _animatedSprite.Height) / 2;
+            //this.Origin = new Vector2(_animatedSprite.Width, _animatedSprite.Height) / 2;
         }
 
         ~SpriteComponent() {}
 
         public override void Update(GameTime gameTime) => _animatedSprite.Update(gameTime);
-        public void Render(SpriteBatch spriteBatch) => _animatedSprite.Render(spriteBatch);
+        //public void Draw(Vector2 position) { this.Position = position; _animatedSprite.Render(); }
+        public void Draw(SpriteBatch spriteBatch) => _animatedSprite.Render(spriteBatch);
 
         public void Play(string animationName) => _animatedSprite.Play(animationName);
 

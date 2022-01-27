@@ -69,9 +69,8 @@ namespace Retroherz
             _player = _world.CreateEntity();
             _player.Attach(new PlayerComponent());
             _player.Attach(new SpriteComponent(ref asepriteDocument));
-            _player.Attach(new ColliderComponent(new RectangleF(Point2.Zero, new Size2(20, 20))));
+            _player.Attach(new ColliderComponent(new RectangleF(position, new Size2(16f, 16f))));
             _player.Attach(new RectangularColliderComponent(position: position, size: new Size2(32, 32f)));
-            //_player.Attach(new CircularColliderComponent(position: position, radius: 16f));
             _player.Attach(new PhysicsComponent(position: position));
 
             return _player.Id;
@@ -88,9 +87,8 @@ namespace Retroherz
 
             // Add Dispose() to all systems
             _world = new WorldBuilder()
-                .AddSystem(new ColliderSystem(_tiledMap))
-                .AddSystem(new DebugSystem(GraphicsDevice, GameManager.Camera, _tiledMap))
                 .AddSystem(new PlayerSystem(GameManager.Camera))
+                .AddSystem(new ColliderSystem(_tiledMap))
                 .AddSystem(new RenderSystem(GraphicsDevice, GameManager.Camera))
                 .Build();
             Components.Add(_world);

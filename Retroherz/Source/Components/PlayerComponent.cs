@@ -19,9 +19,9 @@ namespace Retroherz.Components
     public class PlayerComponent //: SimpleGameComponent
     {
         // EXPERIMENTAL
-        public Vector2 Position { get; set; }
-        public Vector2 Velocity { get; set; }
-        public Vector2 Direction { get; set; }
+        //public Vector2 Position { get; set; }
+        //public Vector2 Velocity { get; set; }
+        //public Vector2 Direction { get; set; }
 
         ////
         public Vector2 Origin { get; set; }

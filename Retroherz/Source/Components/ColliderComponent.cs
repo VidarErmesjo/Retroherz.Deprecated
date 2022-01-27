@@ -5,57 +5,97 @@ using System.Threading.Tasks;
 
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
+using MonoGame.Extended.Collisions;
 
 namespace Retroherz.Components
 {
-    // ColliderComponent?
-    public class ColliderComponent
+    public class ColliderComponent : ICollisionActor
     {
-        private BoundingRectangle _boundingRectangle;
-        private Ray2 _ray;
-
-        public Point2 Center
+        public enum ColliderComponentType
         {
-            get => _boundingRectangle.Center;
-            set => _boundingRectangle.Center = value;
+            Dynamic,
+            Static//, Wall
         }
 
-        public Vector2 HalfExtents
-        {
-            get => _boundingRectangle.HalfExtents;
-            set => _boundingRectangle.HalfExtents = value;
-        }       
+        public bool hasCollided = false;
 
-        public ColliderComponent(RectangleF rectangle)
+        public ColliderComponentType Type { get; set; }
+
+        public IShapeF Bounds { get; }
+
+        public Vector2 PenetrationNormal { get; set; }
+
+        public ColliderComponent[] Contact = new ColliderComponent[4];
+
+        public ColliderComponent(IShapeF bounds, ColliderComponentType type = default(ColliderComponentType))
         {
-            _boundingRectangle = rectangle;
-            _ray = new Ray2();  // ???
+            Bounds = bounds;
+            Type = type;
+            Contact[0] = null;
+            Contact[1] = null;
+            Contact[2] = null;
+            Contact[3] = null;
         }
 
         ~ColliderComponent() {}
 
-        // POPULATE WITH FUNCTIONS
-
-        /// <summary>
-        ///     Performs an implicit conversion from a <see cref="BoundingRectangle" /> to a <see cref="RectangleF" />.
-        /// </summary>
-        /// <param name="boundingRectangle">The bounding rectangle.</param>
-        /// <returns>
-        ///     The resulting <see cref="Rectangle" />.
-        /// </returns>
-        public static implicit operator RectangleF(ColliderComponent boundingRectangle)
+        public void OnCollision(CollisionEventArgs collisionEventArgs)
         {
-            var minimum = boundingRectangle.Center - boundingRectangle.HalfExtents;
-            return new RectangleF(minimum.X, minimum.Y, boundingRectangle.HalfExtents.X * 2,
-                boundingRectangle.HalfExtents.Y * 2);
+            this.PenetrationNormal = Vector2.Zero;
+
+            switch (this.Type)
+            {
+                case ColliderComponentType.Static:
+                    return;
+                case ColliderComponentType.Dynamic:
+                {
+                    var other = (ColliderComponent) collisionEventArgs.Other;
+                    this.PenetrationNormal = collisionEventArgs.PenetrationVector.NormalizedCopy();
+                    this.Contact[0] = PenetrationNormal.Y > 0 ? other : null;   // SOUTH
+                    this.Contact[1] = PenetrationNormal.X < 0 ? other : null;   // WEST
+                    this.Contact[2] = PenetrationNormal.Y < 0 ? other : null;   // NORTH
+                    this.Contact[3] = PenetrationNormal.X > 0 ? other : null;   // EAST
+                    this.Bounds.Position -= collisionEventArgs.PenetrationVector;
+                    this.hasCollided = true;
+                }
+                    break;
+                default:
+                    break;
+            }
         }
 
-        /// <summary>
-        ///     Returns a <see cref="string" /> that represents this <see cref="BoundingRectangle" />.
-        /// </summary>
-        /// <returns>
-        ///     A <see cref="string" /> that represents this <see cref="BoundingRectangle" />.
-        /// </returns>
-        public override string ToString() => _boundingRectangle.ToString();        
+
+
+        public static implicit operator RectangleF(ColliderComponent colliderComponent)
+        {
+            var rectangle = (RectangleF) colliderComponent.Bounds;
+            return new RectangleF(rectangle.Position, rectangle.Size);
+        }
+        
+        public static implicit operator CircleF(ColliderComponent colliderComponent)
+        {
+            var circle = (CircleF) colliderComponent.Bounds;
+            return new CircleF(circle.Center, circle.Radius);
+        }
+
+        public static implicit operator Vector2(ColliderComponent colliderComponent)
+        {
+            var rectangle = (RectangleF) colliderComponent.Bounds;
+            return new Vector2(rectangle.Width, rectangle.Height);
+        }
+
+        public static implicit operator Point2(ColliderComponent colliderComponent)
+        {
+            var rectangle = (RectangleF) colliderComponent.Bounds;
+            return new Point2(rectangle.Width, rectangle.Height);
+        }
+
+        public static implicit operator Size2(ColliderComponent colliderComponent)
+        {
+            var rectangle = (RectangleF) colliderComponent.Bounds;
+            return new Size2(rectangle.Width, rectangle.Height);
+        }
+
+        public override string ToString() => this.Bounds.ToString();
     }
 }

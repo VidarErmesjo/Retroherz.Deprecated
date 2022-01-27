@@ -15,11 +15,14 @@ namespace Retroherz.Systems
         private readonly SpriteBatch _spriteBatch;
         private readonly GraphicsDevice _graphicsDevice;
         private readonly OrthographicCamera _camera;
+        private ComponentMapper<ColliderComponent> _colliderComponentMapper;
         private ComponentMapper<SpriteComponent> _spriteComponentMapper;
         private ComponentMapper<PhysicsComponent> _physicsComponentMapper;
 
         public RenderSystem(GraphicsDevice graphicsDevice, OrthographicCamera camera)
-            : base(Aspect.All(typeof(SpriteComponent), typeof(PhysicsComponent)))
+            : base(Aspect
+                .All(typeof(SpriteComponent), typeof(PhysicsComponent))
+                .One(typeof(ColliderComponent)))
         {
             _camera = camera;
             _graphicsDevice = graphicsDevice;
@@ -28,6 +31,7 @@ namespace Retroherz.Systems
 
         public override void Initialize(IComponentMapperService mapperService)
         {
+            _colliderComponentMapper = mapperService.GetMapper<ColliderComponent>();
             _spriteComponentMapper = mapperService.GetMapper<SpriteComponent>();
             _physicsComponentMapper = mapperService.GetMapper<PhysicsComponent>();
         }
@@ -42,12 +46,23 @@ namespace Retroherz.Systems
 
             foreach(var entityId in ActiveEntities)
             {
+                var collider = _colliderComponentMapper.Get(entityId);
                 var sprite = _spriteComponentMapper.Get(entityId);
                 var physics = _physicsComponentMapper.Get(entityId);
 
                 sprite.Position = physics.Position;
-                sprite.Render(_spriteBatch);
+                sprite.Update(gameTime);
+                sprite.Draw(_spriteBatch);
 
+                _spriteBatch.DrawRectangle(collider, Color.Green);
+
+                // Embellish the "in contact" rectangles in yellow
+                for (int i = 0; i < 4; i++)
+                {
+                    if (collider.Contact[i] != null)
+                        _spriteBatch.FillRectangle(collider.Contact[i].Bounds.Position, collider.Contact[i], Color.Yellow);
+                    collider.Contact[i] = null;
+                }
                 /*WeaponComponent weapon = _weaponMapper.Get(entity);
                 SuperSprite sprite = _spriteMapper.Get(entity);
 
