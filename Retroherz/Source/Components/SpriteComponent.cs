@@ -30,7 +30,9 @@ namespace Retroherz.Components
         public Vector2 Scale
         {
             get => _animatedSprite.Scale;
-            set => _animatedSprite.Scale = value;
+            set => _animatedSprite.Scale = new Vector2(
+                value.X / _animatedSprite.Width,
+                value.Y / _animatedSprite.Height);
         }
 
         public float Rotation
@@ -42,7 +44,7 @@ namespace Retroherz.Components
         public SpriteComponent(ref AsepriteDocument asepriteDocument)
         {
             _animatedSprite = new AnimatedSprite(asepriteDocument);
-            //this.Origin = new Vector2(_animatedSprite.Width, _animatedSprite.Height) / 2;
+            //Origin = new Vector2(_animatedSprite.Width, _animatedSprite.Height) / 2;
         }
 
         ~SpriteComponent() {}

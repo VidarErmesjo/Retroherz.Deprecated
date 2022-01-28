@@ -28,7 +28,6 @@ namespace Retroherz
         private SpriteBatch _spriteBatch;
 
         private TiledMap _tiledMap;
-        private TiledMapRenderer _tileMapRenderer;
 
         private Entity _player;
         private World _world;
@@ -64,14 +63,17 @@ namespace Retroherz
         public int CreatePlayer()
         {
             var position = new Vector2(GameManager.VirtualResolution.Width / 2, GameManager.VirtualResolution.Height / 2);
+            var size = new Size2(16f, 16f);
+            var rectangle = new RectangleF(position, size);
+            var circle = new CircleF(position, 8);
             var asepriteDocument = AssetsManager.Sprite("Shitsprite");//Content.Load<AsepriteDocument>("Aseprite/Shitsprite");
 
             _player = _world.CreateEntity();
             _player.Attach(new PlayerComponent());
             _player.Attach(new SpriteComponent(ref asepriteDocument));
-            _player.Attach(new ColliderComponent(new RectangleF(position, new Size2(16f, 16f))));
-            _player.Attach(new RectangularColliderComponent(position: position, size: new Size2(32, 32f)));
-            _player.Attach(new PhysicsComponent(position: position));
+            //_player.Attach(new RectangularColliderComponent(position, Vector2.Zero, size));
+            _player.Attach(new ColliderComponent(rectangle));
+            _player.Attach(new PhysicsComponent(position: position, size: size));
 
             return _player.Id;
         }
@@ -82,13 +84,15 @@ namespace Retroherz
             GameManager.Initialize();
             HUD.Initialize();
 
-            _tileMapRenderer = new TiledMapRenderer(GraphicsDevice, _tiledMap);
+            //_tileMapRenderer = new TiledMapRenderer(GraphicsDevice, _tiledMap);
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
             // Add Dispose() to all systems
             _world = new WorldBuilder()
                 .AddSystem(new PlayerSystem(GameManager.Camera))
-                .AddSystem(new ColliderSystem(_tiledMap))
+                .AddSystem(new TiledMapSystem(_tiledMap, GraphicsDevice, GameManager.Camera))
+                //.AddSystem(new ColliderSystem(_tiledMap))
+                .AddSystem(new PhysicsSystem(_tiledMap))
                 .AddSystem(new RenderSystem(GraphicsDevice, GameManager.Camera))
                 .Build();
             Components.Add(_world);
@@ -100,13 +104,10 @@ namespace Retroherz
         {
             if(GameManager.GamePadState.Buttons.Back == ButtonState.Pressed || GameManager.KeyboardState.IsKeyDown(Keys.Escape))
                 Exit();
-
-            _tileMapRenderer.Update(gameTime);
                 
             GameManager.Update();
             HUD.Update(gameTime);
 
-            //_world.Update(gameTime);
             base.Update(gameTime);
         }
 
@@ -115,12 +116,9 @@ namespace Retroherz
             //GameManager.GraphicsDeviceManager.GraphicsDevice.SetRenderTarget((GameManager.LowResolution ? GameManager.VirtualRenderTarget : GameManager.DeviceRenderTarget));
             GameManager.GraphicsDeviceManager.GraphicsDevice.Clear(Color.Transparent);
 
-            _tileMapRenderer.Draw(GameManager.Camera.GetViewMatrix());
-
             //this.Draw(_spriteBatch);
             HUD.Draw(_spriteBatch);
 
-            //_world.Draw(gameTime);
             base.Draw(gameTime);
         }
 
@@ -164,7 +162,6 @@ namespace Retroherz
 
             if(disposing)
             {
-                _tileMapRenderer.Dispose();
                 _spriteBatch.Dispose();
                 _world.Dispose();
             }
