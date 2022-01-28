@@ -4,6 +4,7 @@ using System.Linq;
 
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
+using MonoGame.Extended.Collections;
 using MonoGame.Extended.Entities;
 using MonoGame.Extended.Entities.Systems;
 using MonoGame.Extended.Tiled;
@@ -15,8 +16,8 @@ namespace Retroherz.Systems
     public class PhysicsSystem : EntityProcessingSystem
     {
         private readonly TiledMap _tiledMap;
-        private readonly List<PhysicsComponent> _obstacles;
-        private ComponentMapper<RectangularColliderComponent> _colliderCompomentMapper;
+        private readonly Bag<PhysicsComponent> _colliders;
+        private ComponentMapper<ColliderComponent> _colliderCompomentMapper;
         private ComponentMapper<PhysicsComponent> _physicsComponentMapper;
 
         public PhysicsSystem(TiledMap tiledMap)
@@ -24,22 +25,13 @@ namespace Retroherz.Systems
                 .All(typeof(PhysicsComponent)))
         {
             _tiledMap = tiledMap;
-            _obstacles = new List<PhysicsComponent>();
+            _colliders = new Bag<PhysicsComponent>();
         }
 
         public override void Initialize(IComponentMapperService mapperService)
         {
-            _colliderCompomentMapper = mapperService.GetMapper<RectangularColliderComponent>();
+            _colliderCompomentMapper = mapperService.GetMapper<ColliderComponent>();
             _physicsComponentMapper = mapperService.GetMapper<PhysicsComponent>();
-
-                var tiles = _tiledMap.TileLayers[0].Tiles.Where(x => !x.IsBlank);
-                foreach (var tile in tiles)
-                {
-                    var position = new Vector2(tile.X * _tiledMap.TileWidth, tile.Y * _tiledMap.TileHeight);
-                    var size = new Vector2(_tiledMap.TileWidth, _tiledMap.TileHeight);
-                    var obstacle = new PhysicsComponent(position, Vector2.Zero, Vector2.Zero, size);
-                    _obstacles.Add(obstacle);
-                }
         }
 
         public override void Process(GameTime gameTime, int entityId)
@@ -53,55 +45,92 @@ namespace Retroherz.Systems
             var location = Vector2.Floor(physics.Position / new Vector2(
                 _tiledMap.TileWidth,
                 _tiledMap.TileHeight));
-            System.Console.WriteLine("Tile: {0}", location);
+
+            // Get a subset of colliders
+            EvaluateColliders(physics, deltaTime);
 
             // Sort collision in order of distance
-            var contactPoint = Vector2.Zero;
-            var contactNormal = Vector2.Zero;
-            var contactTime = 0.0f;
-            var obstacles = new List<Tuple<PhysicsComponent, float>>();
+            var contactPoint = new Vector2();
+            var contactNormal = new Vector2();
+            var contactTime = new float();
+            var colliders = new List<Tuple<PhysicsComponent, float>>(_colliders.Count);
 
             // Work out collision point, add it to vector along with rectangle ID
-            foreach (var obstacle in _obstacles)
-            {
-                if(Intersects(
+            foreach (var collider in _colliders)
+            {                                 
+                if (Collides(
                     ref physics,
-                    obstacle,
-                    out contactPoint,
-                    out contactNormal,
-                    out contactTime,
+                    collider,
+                    ref contactPoint,
+                    ref contactNormal,
+                    ref contactTime,
                     deltaTime))
-                        obstacles.Add(new Tuple<PhysicsComponent, float>(obstacle, contactTime));
+                        colliders.Add(new Tuple<PhysicsComponent, float>(collider, contactTime));
             }
 
-            if (obstacles.Count > 0)
+            if (colliders.Count > 0)
             {
                 // Do the sort
-                obstacles.Sort((a, b) => a.Item2.CompareTo(b.Item2));
+                colliders.Sort((a, b) => a.Item2.CompareTo(b.Item2));
 
                 // Now resolve the collision in correct order
-                foreach (var obstacle in obstacles)
-                    Resolve(physics, obstacle.Item1, deltaTime);                
+                foreach (var collider in colliders)
+                    ResolveCollision(physics, collider.Item1, deltaTime);
             }
 
             // Update position
             physics.Position += physics.Velocity * deltaTime;
         }
 
+        private void EvaluateColliders(PhysicsComponent physics, float deltaTime)
+        {
+            // Predict search area
+            var inflated = new RectangleF(physics.Position, physics.Size);
+            var factor = physics.Velocity.NormalizedCopy() * physics.Size * physics.Velocity.Length() * deltaTime; //* physics.Size.Length() * deltaTime;
+            inflated.Inflate(MathF.Abs(factor.X), MathF.Abs(factor.Y));
+
+            // Load tiles
+            var tiles = _tiledMap.TileLayers[0].Tiles.Where(x => !x.IsBlank);
+
+            // Clear and add self
+            _colliders.Clear();
+            foreach (var tile in tiles)
+            {
+                var position = new Vector2(tile.X * _tiledMap.TileWidth, tile.Y * _tiledMap.TileHeight);
+                var size = new Vector2(_tiledMap.TileWidth, _tiledMap.TileHeight);
+                var candidate = new RectangleF(position, size);
+
+                if(inflated.Intersects(candidate))
+                    _colliders.Add(new PhysicsComponent(position: position, size: size));
+            }
+
+            // Add actors
+            foreach (var entityId in ActiveEntities)
+            {
+                var entity = _physicsComponentMapper.Get(entityId);
+                var candidate = new RectangleF(entity.Position, entity.Size);
+
+                if(!physics.Equals(entity) && inflated.Intersects(candidate))
+                    _colliders.Add(new PhysicsComponent(position: entity.Position, size: entity.Size));
+            }
+        }
+
+        // Courtesy of One Lone Coder
+        // https://github.com/OneLoneCoder/olcPixelGameEngine/blob/master/Videos/OneLoneCoder_PGE_Rectangles.cpp
+        
         private static void Swap<T>(ref T a, ref T b) => (a, b) = (b, a);
 
-        private static bool Ray(
+        private static bool Intersects(
             Vector2 rayOrigin,
             Vector2 rayDirection,
             PhysicsComponent target,
-            out Vector2 contactPoint,
-            out Vector2 contactNormal,
-            out float timeHitNear,
+            ref Vector2 contactPoint,
+            ref Vector2 contactNormal,
+            ref float timeHitNear,
             float deltaTime)
         {
             contactPoint = Vector2.Zero;
             contactNormal = Vector2.Zero;
-            timeHitNear = 0.0f;
 
             // Cache division
             var inverseDirection = Vector2.One / rayDirection;
@@ -144,19 +173,14 @@ namespace Retroherz.Systems
             return true;
         }
 
-        // Collides?
-        private static bool Intersects(
+        private static bool Collides(
             ref PhysicsComponent collider,
             PhysicsComponent obstacle,
-            out Vector2 contactPoint,
-            out Vector2 contactNormal,
-            out float contactTime,
+            ref Vector2 contactPoint,
+            ref Vector2 contactNormal,
+            ref float contactTime,
             float deltaTime)
         {
-            contactPoint = Vector2.Zero;
-            contactNormal = Vector2.Zero;
-            contactTime = 0.0f;
-
             // Check if rectangle is actually moving - we assume rectangles are NOT in collision on start
             if (collider.Velocity == Vector2.Zero) return false;
 
@@ -165,44 +189,42 @@ namespace Retroherz.Systems
 
             // Expand target collider box by source dimensions
             var inflated = new PhysicsComponent(
-                obstacle.Position - collider.Size / 2 * hack,
-                collider.Velocity,
-                Vector2.Zero,
-                obstacle.Size + collider.Size * hack);
+                position: obstacle.Position - collider.Size / 2,// * hack,
+                size: obstacle.Size + collider.Size);// * hack);
 
             // Calculate ray vectors
-            var rayOrigin = collider.Position + collider.Size / 2 * hack;
+            var rayOrigin = collider.Position + collider.Size / 2;
             var rayDirection = collider.Velocity * deltaTime;
             
             // Cast ray
-            if (Ray(
+            if (Intersects(
                 rayOrigin,
                 rayDirection,
                 inflated,
-                out contactPoint,
-                out contactNormal,
-                out contactTime,
+                ref contactPoint,
+                ref contactNormal,
+                ref contactTime,
                 deltaTime))
                     return (contactTime >= 0.0f && contactTime < 1.0f);
             else 
                 return false;
         }
 
-        private static bool Resolve(
+        private static bool ResolveCollision(
             PhysicsComponent collider,
             PhysicsComponent obstacle,
             float deltaTime)
         {
-            var contactPoint = new Vector2();
-            var contactNormal = new Vector2();
+            var contactPoint = Vector2.Zero;
+            var contactNormal = Vector2.Zero;
             var contactTime = 0.0f;
 
-            if (Intersects(
+            if (Collides(
                 ref collider,
                 obstacle,
-                out contactPoint,
-                out contactNormal,
-                out contactTime,
+                ref contactPoint,
+                ref contactNormal,
+                ref contactTime,
                 deltaTime))
             {
                 // Add contact normal information

@@ -29,8 +29,9 @@ namespace Retroherz
 
         private TiledMap _tiledMap;
 
-        private Entity _player;
         private World _world;
+
+        private FastRandom _random;
 
         public readonly AssetsManager AssetsManager;
         public readonly GameManager GameManager;
@@ -68,14 +69,29 @@ namespace Retroherz
             var circle = new CircleF(position, 8);
             var asepriteDocument = AssetsManager.Sprite("Shitsprite");//Content.Load<AsepriteDocument>("Aseprite/Shitsprite");
 
-            _player = _world.CreateEntity();
-            _player.Attach(new PlayerComponent());
-            _player.Attach(new SpriteComponent(ref asepriteDocument));
-            //_player.Attach(new RectangularColliderComponent(position, Vector2.Zero, size));
-            _player.Attach(new ColliderComponent(rectangle));
-            _player.Attach(new PhysicsComponent(position: position, size: size));
+            var player = _world.CreateEntity();
+            player.Attach(new PlayerComponent());
+            player.Attach(new SpriteComponent(ref asepriteDocument));
+            player.Attach(new ColliderComponent(rectangle));
+            player.Attach(new PhysicsComponent(position: position, size: size));
 
-            return _player.Id;
+            return player.Id;
+        }
+
+        public int CreateActor()
+        {
+            var position = new Vector2(GameManager.VirtualResolution.Width / 4, GameManager.VirtualResolution.Height / 4);
+            var size = new Size2(16f, 16f);
+            var velocity = Vector2.One * _random.NextSingle(-1, 1) * 16;
+            var rectangle = new RectangleF(position, size);
+            var asepriteDocument = AssetsManager.Sprite("Shitsprite");
+
+            var actor = _world.CreateEntity();
+            actor.Attach(new SpriteComponent(ref asepriteDocument));
+            actor.Attach(new ColliderComponent(rectangle));
+            actor.Attach(new PhysicsComponent(position: position, velocity: velocity, size: size));
+
+            return actor.Id;
         }
 
         protected override void Initialize()
@@ -84,10 +100,10 @@ namespace Retroherz
             GameManager.Initialize();
             HUD.Initialize();
 
-            //_tileMapRenderer = new TiledMapRenderer(GraphicsDevice, _tiledMap);
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            // Add Dispose() to all systems
+            _random = new FastRandom(((int)DateTime.Now.Ticks));
+
             _world = new WorldBuilder()
                 .AddSystem(new PlayerSystem(GameManager.Camera))
                 .AddSystem(new TiledMapSystem(_tiledMap, GraphicsDevice, GameManager.Camera))
@@ -98,6 +114,7 @@ namespace Retroherz
             Components.Add(_world);
 
             var playerId = CreatePlayer();
+            var actorId = CreateActor();
         }
 
         protected override void Update(GameTime gameTime)

@@ -51,25 +51,32 @@ namespace Retroherz.Systems
             var physics = _physicsComponentMapper.Get(entityId);
             var collider = _colliderComponentMapper.Get(entityId);
 
-            // Calculate velocity from direction
             if (mouseState.LeftButton == ButtonState.Pressed)
             {
-                //var halfExtents = physics. / 2;
+                // Accelerate
                 physics.Direction = Vector2.Normalize(_camera.ScreenToWorld(
                     new Vector2(mouseState.X, mouseState.Y)) - physics.Position - physics.Origin);
 
-                physics.Velocity += physics.Direction * player.MaxSpeed * ((float)deltaTime);
-                //ClampVelocity(ref physics);
+                physics.Velocity += physics.Direction * player.MaxSpeed * deltaTime;
+                
+                physics.Velocity = new Vector2((
+                    MathHelper.Clamp(physics.Velocity.X, -player.MaxSpeed, player.MaxSpeed)),
+                    MathHelper.Clamp(physics.Velocity.Y, -player.MaxSpeed, player.MaxSpeed));
+
                 sprite.Play("Walk");
             }
             else
             {
+                // Slow down
+                var factor = deltaTime * -10;
                 physics.Velocity = new Vector2(
-                    MathHelper.LerpPrecise(physics.Velocity.X, 0, 1f * deltaTime),
-                    MathHelper.LerpPrecise(physics.Velocity.Y, 0, 1f * deltaTime));
+                    MathHelper.LerpPrecise(0, physics.Velocity.X, MathF.Pow(2, factor)),
+                    MathHelper.LerpPrecise(0, physics.Velocity.Y, MathF.Pow(2, factor)));
 
                 sprite.Play("Idle");
             }
+                        //System.Console.WriteLine(physics.Velocity);
+
 
             // Can haz floatie camera??
            /*physics.Position = new Vector2(

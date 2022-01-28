@@ -4,6 +4,7 @@ using MonoGame.Extended;
 
 namespace Retroherz.Components
 {
+    // ActorComponent?
     public class PhysicsComponent
     {
         public Vector2 Position { get; set; }

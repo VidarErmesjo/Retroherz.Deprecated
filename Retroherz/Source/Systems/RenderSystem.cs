@@ -52,6 +52,7 @@ namespace Retroherz.Systems
                 samplerState: SamplerState.PointClamp,
                 transformMatrix: _camera.GetViewMatrix());
 
+            var deltaTime = gameTime.GetElapsedSeconds();
             foreach(var entityId in ActiveEntities)
             {
                 var collider = _colliderComponentMapper.Get(entityId);
@@ -66,6 +67,17 @@ namespace Retroherz.Systems
 
                 _spriteBatch.DrawRectangle(physics.Position, physics.Size, Color.Green);
 
+                var deltaPosition = physics.Position + physics.Velocity * 16 * deltaTime;
+                _spriteBatch.DrawRectangle(deltaPosition, physics.Size, Color.Red);
+                var inflated = new RectangleF(physics.Position, physics.Size);
+                var factor = physics.Velocity.NormalizedCopy() * physics.Size * physics.Velocity.Length() * deltaTime; //* physics.Size.Length() * deltaTime;
+
+                //IShapeF circle = new CircleF(physics.Position + physics.Size / 2, factor * 4);
+                //_spriteBatch.DrawCircle((CircleF) circle, 32, Color.White);
+
+                inflated.Inflate(MathF.Abs(factor.X), MathF.Abs(factor.Y));
+                _spriteBatch.DrawRectangle(inflated, Color.Yellow);
+ 
                 // Embellish the "in contact" rectangles in yellow
                 for (int i = 0; i < 4; i++)
                 {
