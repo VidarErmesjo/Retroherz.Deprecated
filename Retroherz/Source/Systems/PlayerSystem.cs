@@ -22,7 +22,6 @@ namespace Retroherz.Systems
         private ComponentMapper<ColliderComponent> _colliderComponentMapper;
         private ComponentMapper<PhysicsComponent> _physicsComponentMapper;
 
-        // PlayerSystem??
         public PlayerSystem(OrthographicCamera camera)
             : base(Aspect
                 .All(
@@ -55,27 +54,27 @@ namespace Retroherz.Systems
             // Calculate velocity from direction
             if (mouseState.LeftButton == ButtonState.Pressed)
             {
+                //var halfExtents = physics. / 2;
                 physics.Direction = Vector2.Normalize(_camera.ScreenToWorld(
-                    new Vector2(mouseState.X, mouseState.Y)) - physics.Position);
-
-                //if (collider.PenetrationNormal == Vector2.UnitX)
+                    new Vector2(mouseState.X, mouseState.Y)) - physics.Position - physics.Origin);
 
                 physics.Velocity += physics.Direction * player.MaxSpeed * ((float)deltaTime);
-
-                //MathHelper.Clamp(physics.Velocity.X, 0, 1);
+                //ClampVelocity(ref physics);
                 sprite.Play("Walk");
             }
             else
             {
                 physics.Velocity = new Vector2(
-                    MathHelper.LerpPrecise(physics.Velocity.X, 0, 1f * ((float)deltaTime)),
-                    MathHelper.LerpPrecise(physics.Velocity.Y, 0, 1f * ((float)deltaTime)));
+                    MathHelper.LerpPrecise(physics.Velocity.X, 0, 1f * deltaTime),
+                    MathHelper.LerpPrecise(physics.Velocity.Y, 0, 1f * deltaTime));
 
                 sprite.Play("Idle");
             }
 
-            // Update position
-            physics.Position += physics.Velocity * deltaTime;
+            // Can haz floatie camera??
+           /*physics.Position = new Vector2(
+                MathHelper.LerpPrecise(physics.Position.X, _camera.Center.X, 0.1f * deltaTime),
+                MathHelper.LerpPrecise(physics.Position.Y, _camera.Center.Y, 0.1F * deltaTime));*/
 
             // Update camera
             _camera.LookAt(physics.Position);
