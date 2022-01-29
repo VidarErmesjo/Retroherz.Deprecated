@@ -25,6 +25,8 @@ namespace Retroherz
     {
         private bool _isDisposed = false;
 
+        private GraphicsDeviceManager _graphics;
+
         private SpriteBatch _spriteBatch;
 
         private TiledMap _tiledMap;
@@ -53,7 +55,7 @@ namespace Retroherz
 
             _tiledMap = Content.Load<TiledMap>("Tiled/Shitmap");
 
-            //ShadowCasting.ShadowCasting.ConvertTileMapToPolyMap(_tiledMap);
+           //ShadowCasting.ShadowCasting.ConvertTileMapToPolyMap(_tiledMap);
 
             /* !EXPERIMENTAL */
 
@@ -63,7 +65,7 @@ namespace Retroherz
         // CreatePlayer(State state) ???
         public int CreatePlayer()
         {
-            var position = new Vector2(GameManager.VirtualResolution.Width / 2, GameManager.VirtualResolution.Height / 2);
+            var position = Vector2.One * 16 * 4;//new Vector2(GameManager.VirtualResolution.Width / 2, GameManager.VirtualResolution.Height / 2);
             var size = new Size2(16f, 16f);
             var rectangle = new RectangleF(position, size);
             var circle = new CircleF(position, 8);
@@ -80,7 +82,7 @@ namespace Retroherz
 
         public int CreateActor()
         {
-            var position = new Vector2(GameManager.VirtualResolution.Width / 4, GameManager.VirtualResolution.Height / 4);
+            var position = Vector2.One * 16 * 2;
             var size = new Size2(16f, 16f);
             var velocity = Vector2.One * _random.NextSingle(-1, 1) * 16;
             var rectangle = new RectangleF(position, size);
@@ -102,8 +104,8 @@ namespace Retroherz
 
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            _random = new FastRandom(((int)DateTime.Now.Ticks));
-
+            _random = new FastRandom((Math.Abs((int)DateTime.Now.Ticks)));
+  
             _world = new WorldBuilder()
                 .AddSystem(new PlayerSystem(GameManager.Camera))
                 .AddSystem(new TiledMapSystem(_tiledMap, GraphicsDevice, GameManager.Camera))
@@ -111,10 +113,26 @@ namespace Retroherz
                 .AddSystem(new PhysicsSystem(_tiledMap))
                 .AddSystem(new RenderSystem(GraphicsDevice, GameManager.Camera))
                 .Build();
-            Components.Add(_world);
+            //_world.Initialize();
+            //Components.Add(_world);
 
             var playerId = CreatePlayer();
             var actorId = CreateActor();
+
+            GameManager.Camera.ZoomIn(4f);
+            //GameManager.Camera.Rotate(MathHelper.Pi / 4);
+
+            // Access TileMapLayers
+            //var whatIs = _tiledMap.GetLayer<TiledMapTileLayer>("Tile Layer 1");
+            //var whatIs = _tiledMap.GetLayer("Tile Layer 1") as TiledMapTileLayer;
+            var whatIs = _tiledMap.TileLayers[0]; // can return null
+
+            //whatIs.SetTile(1, 1, 1);
+            
+            foreach (var what in whatIs.Tiles.Where(tile => !tile.IsBlank))
+            {                
+                System.Console.WriteLine("{0}, {1}",  what.X, what.Y);
+            }
         }
 
         protected override void Update(GameTime gameTime)
@@ -123,18 +141,36 @@ namespace Retroherz
                 Exit();
                 
             GameManager.Update();
-            HUD.Update(gameTime);
+            //HUD.Update(gameTime);
+            _world.Update(gameTime);
 
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
+            var scale = 1f / (GameManager.VirtualResolution.Height / GameManager.GraphicsDeviceManager.GraphicsDevice.Viewport.Height);
             //GameManager.GraphicsDeviceManager.GraphicsDevice.SetRenderTarget((GameManager.LowResolution ? GameManager.VirtualRenderTarget : GameManager.DeviceRenderTarget));
+            GameManager.GraphicsDeviceManager.GraphicsDevice.SetRenderTarget(GameManager.VirtualRenderTarget);
             GameManager.GraphicsDeviceManager.GraphicsDevice.Clear(Color.Transparent);
 
+            _spriteBatch.Begin();
+            _world.Draw(gameTime);
+            _spriteBatch.End();
+
+            GameManager.GraphicsDeviceManager.GraphicsDevice.SetRenderTarget(null);
+            GameManager.GraphicsDeviceManager.GraphicsDevice.Clear(Color.Transparent);
+
+            _spriteBatch.Begin(                
+                SpriteSortMode.Immediate,
+                BlendState.NonPremultiplied,
+                SamplerState.PointClamp,
+                effect: null);
+            _spriteBatch.Draw(GameManager.VirtualRenderTarget, GameManager.DeviceRectangle, Color.White);
+            _spriteBatch.End();
+
             //this.Draw(_spriteBatch);
-            HUD.Draw(_spriteBatch);
+            //HUD.Draw(_spriteBatch);
 
             base.Draw(gameTime);
         }

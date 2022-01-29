@@ -4,6 +4,12 @@ using MonoGame.Extended;
 
 namespace Retroherz.Components
 {
+    public enum PhysicsComponentType
+    {
+        Static,
+        Dynamic
+    }
+
     // ActorComponent?
     public class PhysicsComponent
     {
@@ -15,6 +21,8 @@ namespace Retroherz.Components
         public Vector2 Size { get; set; }
         public Vector2 Origin { get; set; }
         public PhysicsComponent[] Contact = new PhysicsComponent[4];
+
+        public PhysicsComponentType Type { get; set; }
 
         public PhysicsComponent(
             Vector2 position = default(Vector2),
@@ -32,6 +40,8 @@ namespace Retroherz.Components
             Contact[1] = null;
             Contact[2] = null;
             Contact[3] = null;
+
+            Type = default(PhysicsComponentType);
         }
 
         ~PhysicsComponent() {}

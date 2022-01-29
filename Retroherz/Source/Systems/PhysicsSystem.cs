@@ -8,17 +8,32 @@ using MonoGame.Extended.Collections;
 using MonoGame.Extended.Entities;
 using MonoGame.Extended.Entities.Systems;
 using MonoGame.Extended.Tiled;
+using PubSub;
 
 using Retroherz.Components;
 
 namespace Retroherz.Systems
 {
+    public enum PhysicsSystemActions
+    {
+
+    }
+
     public class PhysicsSystem : EntityProcessingSystem
     {
+        Hub hub = Hub.Default;
+
         private readonly TiledMap _tiledMap;
         private readonly Bag<PhysicsComponent> _colliders;
         private ComponentMapper<ColliderComponent> _colliderCompomentMapper;
         private ComponentMapper<PhysicsComponent> _physicsComponentMapper;
+
+        private IEnumerable<TiledMapTile> GetTiles()
+        {
+            var payload = new TiledMapSystemEvent(TiledMapSystemAction.GetTiles);
+            hub.Publish<TiledMapSystemEvent>(payload);
+            return payload.Tiles;
+        }
 
         public PhysicsSystem(TiledMap tiledMap)
             : base(Aspect
@@ -72,10 +87,16 @@ namespace Retroherz.Systems
             {
                 // Do the sort
                 colliders.Sort((a, b) => a.Item2.CompareTo(b.Item2));
+                //colliders.Sort((a, b) => a.Item2 < b.Item2 ? -1 : 1);
 
                 // Now resolve the collision in correct order
                 foreach (var collider in colliders)
-                    ResolveCollision(physics, collider.Item1, deltaTime);
+                    if(ResolveCollision(physics, collider.Item1, deltaTime))
+                    {
+                        hub.Publish<TiledMapSystemEvent>(new TiledMapSystemEvent(
+                            TiledMapSystemAction.RemoveTile,
+                            collider.Item1.Position));
+                    }
             }
 
             // Update position
@@ -90,9 +111,9 @@ namespace Retroherz.Systems
             inflated.Inflate(MathF.Abs(factor.X), MathF.Abs(factor.Y));
 
             // Load tiles
-            var tiles = _tiledMap.TileLayers[0].Tiles.Where(x => !x.IsBlank);
+            var tiles = GetTiles(); //_tiledMap.TileLayers[0].Tiles.Where(x => !x.IsBlank);     
 
-            // Clear and add self
+            // Clear and add colliders
             _colliders.Clear();
             foreach (var tile in tiles)
             {
@@ -105,11 +126,14 @@ namespace Retroherz.Systems
             }
 
             // Add actors
+            // Optimize ???
             foreach (var entityId in ActiveEntities)
             {
                 var entity = _physicsComponentMapper.Get(entityId);
                 var candidate = new RectangleF(entity.Position, entity.Size);
+                entity.Type = PhysicsComponentType.Dynamic;
 
+                // Ignore self
                 if(!physics.Equals(entity) && inflated.Intersects(candidate))
                     _colliders.Add(new PhysicsComponent(position: entity.Position, size: entity.Size));
             }

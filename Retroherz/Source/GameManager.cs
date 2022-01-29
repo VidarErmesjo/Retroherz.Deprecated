@@ -27,7 +27,7 @@ namespace Retroherz
         public Rectangle DeviceRectangle { get; private set; }
         public float ScaleToDevice { get; private set; }
         public bool IsFullScreen { get; private set; }
-        public bool LowResolution { get; private set; }
+        public bool IsLowResolution { get; private set; }
 
         public OrthographicCamera Camera { get; private set; }
         public BoxingViewportAdapter ViewportAdapter { get; private set; }
@@ -84,8 +84,6 @@ namespace Retroherz
             Window.AllowUserResizing = false;
             //Window.ClientSizeChanged() += OnChange();
 
-            LowResolution = true;
-
             if(IsFullScreen)
                 DeviceResolution = new Size(
                     GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width,
@@ -104,7 +102,7 @@ namespace Retroherz
             GraphicsDeviceManager.SynchronizeWithVerticalRetrace = true;
             GraphicsDeviceManager.HardwareModeSwitch = false;
             GraphicsDeviceManager.ApplyChanges();
-            GraphicsDeviceManager.HardwareModeSwitch = true;
+            GraphicsDeviceManager.HardwareModeSwitch = true;            
 
             DeviceRenderTarget = new RenderTarget2D(
                 graphicsDevice: GraphicsDeviceManager.GraphicsDevice,
@@ -164,11 +162,6 @@ namespace Retroherz
 
             System.Console.WriteLine("Core.Initialize() => OK");
             System.Console.WriteLine("VirtualResolution => {0}, DeviceResolution => {1}, ScaleToDevice => {2}", VirtualResolution, DeviceResolution, ScaleToDevice);
-        }
-
-        public void ToggleRenderQuality()
-        {
-            LowResolution = !LowResolution;
         }
 
         public void Update()

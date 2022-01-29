@@ -13,6 +13,7 @@ using Retroherz.Components;
 
 namespace Retroherz.Systems
 {
+    // DrawSystem => RenderSystem??
     public class RenderSystem : EntityDrawSystem, IDisposable
     {
         private bool _isDisposed = false;
@@ -20,6 +21,7 @@ namespace Retroherz.Systems
         private readonly SpriteBatch _spriteBatch;
         private readonly GraphicsDevice _graphicsDevice;
         private readonly OrthographicCamera _camera;
+        private readonly RenderTarget2D _renderTarget;
 
         private ComponentMapper<ColliderComponent> _colliderComponentMapper;
         //private ComponentMapper<RectangularColliderComponent> _colliderComponentMapper;
@@ -128,7 +130,7 @@ namespace Retroherz.Systems
             _spriteBatch.End();
         }
 
-        /*public void Dispose()
+        /*public new void Dispose()
         {
             Dispose(true);
             GC.SuppressFinalize(this);
@@ -143,6 +145,7 @@ namespace Retroherz.Systems
             {
                 _graphicsDevice.Dispose();
                 _spriteBatch.Dispose();
+                _renderTarget.Dispose();
             }
 
             _isDisposed = true;

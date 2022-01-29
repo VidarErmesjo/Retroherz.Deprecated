@@ -70,7 +70,7 @@ namespace Retroherz
                 }
             }
 
-            resolution = resolutionList[0].Item1;
+            resolution = resolutionList[3].Item1;
 
             using (var game = new Retroherz(resolution, fullscreen))
                 game.Run();
