@@ -13,7 +13,6 @@ using MonoGame.Extended.Entities;
 
 using PubSub;
 
-using Retroherz;
 using Retroherz.Components;
 
 namespace Retroherz.Systems
@@ -35,8 +34,11 @@ namespace Retroherz.Systems
         private readonly SpriteBatch _spriteBatch;
         private readonly TiledMapRenderer _tiledMapRenderer;
         private readonly TiledMap _tiledMap;
+        //private ComponentMapper<TiledMapComponent> _tiledMapComponentMapper;
 
         private void RemoveTile(ushort x, ushort y) { _tiledMap.TileLayers[0].RemoveTile(x, y); }
+
+        public TiledMap TiledMap { get => _tiledMap; }
 
         public TiledMapSystem(TiledMap tiledMap, GraphicsDevice graphics, OrthographicCamera camera)
         {
@@ -64,7 +66,8 @@ namespace Retroherz.Systems
                         break;
 
                     case TiledMapSystemAction.GetTiles:
-                        payload.Tiles = _tiledMap.TileLayers[0].Tiles.Where(tile => !tile.IsBlank).ToArray();
+                        payload.TileWidth = _tiledMap.TileWidth;
+                        payload.TileHeight = _tiledMap.TileHeight;
                         break;
 
                     default:
@@ -75,6 +78,14 @@ namespace Retroherz.Systems
 
         public virtual void Initialize(World world)
         {
+            //var tiledMap = world.GetEntity(tiledMap.Id).Get<TiledMapComponent>();
+            //_tiledMapRenderer.LoadMap(t.TiledMap);
+            //_tiledMapComponentMapper = mapperService.GetMapper<TiledMapComponent>();
+
+            
+            //_tiledMapRenderer.LoadMap(_tiledMapComponentMapper.t().TiledMap);
+            var payload = new TiledMapSystemEvent(TiledMapSystemAction.GetTiles);
+            hub.Publish<TiledMapSystemEvent>(payload);
         }
 
         public virtual void Update(GameTime gameTime)
@@ -114,11 +125,13 @@ namespace Retroherz.Systems
         }
     }
 
-    public class TiledMapSystemEvent : EventArgs
+    public class TiledMapSystemEvent
     {
         public TiledMapSystemAction Action { get; set; }
-        public IEnumerable<TiledMapTile> Tiles { get; set; }
-        public Vector2 Location { get; set; }
+        public TiledMap TiledMap { get; set; }
+        public int TileWidth { get ; set; }
+        public int TileHeight { get; set; }
+        public Vector2 Location { get; }
 
         public TiledMapSystemEvent(
             TiledMapSystemAction action = default(TiledMapSystemAction),

@@ -65,8 +65,8 @@ namespace Retroherz
         // CreatePlayer(State state) ???
         public int CreatePlayer()
         {
-            var position = Vector2.One * 16 * 4;//new Vector2(GameManager.VirtualResolution.Width / 2, GameManager.VirtualResolution.Height / 2);
-            var size = new Size2(16f, 16f);
+            var position = Vector2.One * 16 * 7;//new Vector2(GameManager.VirtualResolution.Width / 2, GameManager.VirtualResolution.Height / 2);
+            var size = new Size2(32, 32);
             var rectangle = new RectangleF(position, size);
             var circle = new CircleF(position, 8);
             var asepriteDocument = AssetsManager.Sprite("Shitsprite");//Content.Load<AsepriteDocument>("Aseprite/Shitsprite");
@@ -75,6 +75,7 @@ namespace Retroherz
             player.Attach(new PlayerComponent());
             player.Attach(new SpriteComponent(ref asepriteDocument));
             player.Attach(new ColliderComponent(rectangle));
+            player.Attach(new RayComponent());
             player.Attach(new PhysicsComponent(position: position, size: size));
 
             return player.Id;
@@ -96,6 +97,14 @@ namespace Retroherz
             return actor.Id;
         }
 
+        public int CreateMap()
+        {
+            var map = _world.CreateEntity();
+            map.Attach(new TiledMapComponent(_tiledMap));
+
+            return map.Id;
+        }
+
         protected override void Initialize()
         {
             base.Initialize();
@@ -111,6 +120,7 @@ namespace Retroherz
                 .AddSystem(new TiledMapSystem(_tiledMap, GraphicsDevice, GameManager.Camera))
                 //.AddSystem(new ColliderSystem(_tiledMap))
                 .AddSystem(new PhysicsSystem(_tiledMap))
+                .AddSystem(new RaySystem())
                 .AddSystem(new RenderSystem(GraphicsDevice, GameManager.Camera))
                 .Build();
             //_world.Initialize();
@@ -118,8 +128,9 @@ namespace Retroherz
 
             var playerId = CreatePlayer();
             var actorId = CreateActor();
+            //var mapId = CreateMap();
 
-            GameManager.Camera.ZoomIn(4f);
+            GameManager.Camera.ZoomIn(6f);
             //GameManager.Camera.Rotate(MathHelper.Pi / 4);
 
             // Access TileMapLayers
@@ -129,10 +140,7 @@ namespace Retroherz
 
             //whatIs.SetTile(1, 1, 1);
             
-            foreach (var what in whatIs.Tiles.Where(tile => !tile.IsBlank))
-            {                
-                System.Console.WriteLine("{0}, {1}",  what.X, what.Y);
-            }
+
         }
 
         protected override void Update(GameTime gameTime)

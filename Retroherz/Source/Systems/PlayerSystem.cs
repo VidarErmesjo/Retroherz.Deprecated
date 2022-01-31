@@ -44,12 +44,27 @@ namespace Retroherz.Systems
         public override void Process(GameTime gameTime, int entityId)
         {
             var mouseState = Mouse.GetState();
+            var keyboardState = Keyboard.GetState();
             var deltaTime = gameTime.GetElapsedSeconds();
             
             var player = _playerComponentMapper.Get(entityId);
             var sprite = _spriteComponentMapper.Get(entityId);
             var physics = _physicsComponentMapper.Get(entityId);
             var collider = _colliderComponentMapper.Get(entityId);
+
+            physics.Direction = Vector2.Zero;
+            if (keyboardState.IsKeyDown(Keys.Up))
+                physics.Direction += -Vector2.UnitY;
+            if (keyboardState.IsKeyDown(Keys.Down))
+                physics.Direction += Vector2.UnitY;
+            if (keyboardState.IsKeyDown(Keys.Left))
+                physics.Direction += -Vector2.UnitX;
+            if (keyboardState.IsKeyDown(Keys.Right))
+                physics.Direction += Vector2.UnitX;
+
+            physics.Direction.Normalize();
+            physics.Velocity += physics.Direction * player.MaxSpeed * deltaTime;
+
 
             if (mouseState.LeftButton == ButtonState.Pressed)
             {
@@ -68,7 +83,7 @@ namespace Retroherz.Systems
             else
             {
                 // Slow down
-                var factor = deltaTime * -10;
+                var factor = deltaTime * -1;
                 physics.Velocity = new Vector2(
                     MathHelper.LerpPrecise(0, physics.Velocity.X, MathF.Pow(2, factor)),
                     MathHelper.LerpPrecise(0, physics.Velocity.Y, MathF.Pow(2, factor)));

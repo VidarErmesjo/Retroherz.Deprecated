@@ -67,27 +67,61 @@ namespace Retroherz.Systems
                 sprite.Update(gameTime);
                 sprite.Draw(_spriteBatch);
 
-                _spriteBatch.DrawRectangle(physics.Position, physics.Size, Color.Green);
+                // Bounding rectangle
+                var bounds = new RectangleF(physics.Position, physics.Size);
+                _spriteBatch.DrawRectangle(bounds, Color.Green);
 
-                var deltaPosition = physics.Position + physics.Velocity * 16 * deltaTime;
-                _spriteBatch.DrawRectangle(deltaPosition, physics.Size, Color.Red);
+                // Pilot rectangle
+                var deltaPosition = physics.Position + physics.Velocity * physics.Size * deltaTime;
+                var pilot = new RectangleF(deltaPosition, physics.Size);
+                _spriteBatch.DrawRectangle(pilot, Color.Red);
+
                 var inflated = new RectangleF(physics.Position, physics.Size);
-                var factor = physics.Velocity.NormalizedCopy() * physics.Size * physics.Velocity.Length() * deltaTime; //* physics.Size.Length() * deltaTime;
-
-                //IShapeF circle = new CircleF(physics.Position + physics.Size / 2, factor * 4);
-                //_spriteBatch.DrawCircle((CircleF) circle, 32, Color.White);
-
+                var factor = physics.Velocity * deltaTime; //* physics.Size.Length() * deltaTime;
+                factor = physics.Position - deltaPosition;
                 inflated.Inflate(MathF.Abs(factor.X), MathF.Abs(factor.Y));
+
+                var minimum = Vector2.Min(bounds.TopLeft, pilot.TopLeft);
+                var maximum = Vector2.Max(bounds.BottomRight, pilot.BottomRight);
+
+                // Search area
+                inflated = new RectangleF(minimum, maximum - minimum);
                 _spriteBatch.DrawRectangle(inflated, Color.Yellow);
- 
+
+                // Rays
+                foreach (var ray in physics.Rays)
+                {
+                    _spriteBatch.DrawPoint(ray.Item1, Color.BlueViolet, 4);
+                    _spriteBatch.DrawPoint(ray.Item2, Color.Red, 4);
+                    _spriteBatch.DrawLine(ray.Item2, ray.Item2 + ray.Item3 * 4, Color.White);
+
+                    // Inflated rays
+                    foreach (var area in physics.Inflated)
+                        _spriteBatch.DrawLine(ray.Item1, area.Position + area.Size / 2, Color.BlueViolet);
+                }
+
+                // Inflated
+                foreach (var area in physics.Inflated)
+                    _spriteBatch.DrawRectangle(area.Position, area.Size, Color.BlueViolet);
+
                 // Embellish the "in contact" rectangles in yellow
-                for (int i = 0; i < 4; i++)
+                /*for (int i = 0; i < 4; i++)
                 {
                     if (physics.Contact[i] != null)
                         _spriteBatch.FillRectangle(
                             physics.Contact[i].Position, physics.Contact[i].Size, Color.Yellow);
                     physics.Contact[i] = null;
-                }
+                }*/
+
+                foreach (var contact in physics.Contacts)
+                    for (var i = 0; i < 4; i++)
+                    {
+                        if (contact[i] != null)
+                            _spriteBatch.FillRectangle(contact[i].Position, contact[i].Size, Color.Yellow);
+
+                        contact[i] = null;
+                    }
+
                 /*WeaponComponent weapon = _weaponMapper.Get(entity);
                 SuperSprite sprite = _spriteMapper.Get(entity);
 
