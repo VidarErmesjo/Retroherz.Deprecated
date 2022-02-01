@@ -41,14 +41,8 @@ namespace Retroherz.Components
         public PhysicsComponentType Type { get; set; }
 
         // EXP
-        public Bag<Tuple<Vector2, Vector2, Vector2, float>> Rays = new Bag<Tuple<Vector2, Vector2, Vector2, float>>();
-        public Bag<PhysicsComponent> Inflated = new Bag<PhysicsComponent>();
-
-        public Bag<PhysicsComponent[]> Contacts = new Bag<PhysicsComponent[]>()
-        {
-            new PhysicsComponent[4] {null, null, null, null}
-        };
-
+        public Bag<Tuple<PhysicsComponent, Vector2, Vector2, float>> ContactInfo;
+    
         // EXP
 
         public PhysicsComponent(PhysicsComponent physicsComponent)
@@ -59,6 +53,7 @@ namespace Retroherz.Components
             Size = physicsComponent.Size;
             Origin = physicsComponent.Origin;
             Contact = physicsComponent.Contact;
+            ContactInfo = physicsComponent.ContactInfo;
             Type = physicsComponent.Type;
         }
 
@@ -73,12 +68,13 @@ namespace Retroherz.Components
             Velocity = velocity;
             Direction = direction;
             Size = size;
-            Origin = new Vector2(size.X / 2, size.Y / 2);
+            Origin = size / 2;
 
             Contact[0] = null;
             Contact[1] = null;
             Contact[2] = null;
             Contact[3] = null;
+            ContactInfo = new Bag<Tuple<PhysicsComponent, Vector2, Vector2, float>>();
 
             Type = type;
         }

@@ -52,21 +52,24 @@ namespace Retroherz.Systems
             var physics = _physicsComponentMapper.Get(entityId);
             var collider = _colliderComponentMapper.Get(entityId);
 
-            physics.Direction = Vector2.Zero;
-            if (keyboardState.IsKeyDown(Keys.Up))
-                physics.Direction += -Vector2.UnitY;
-            if (keyboardState.IsKeyDown(Keys.Down))
-                physics.Direction += Vector2.UnitY;
-            if (keyboardState.IsKeyDown(Keys.Left))
-                physics.Direction += -Vector2.UnitX;
-            if (keyboardState.IsKeyDown(Keys.Right))
-                physics.Direction += Vector2.UnitX;
+            if (keyboardState.GetPressedKeyCount() > 0)
+            {
+                physics.Direction = Vector2.Zero;
+                if (keyboardState.IsKeyDown(Keys.Up))
+                    physics.Direction += -Vector2.UnitY;
+                if (keyboardState.IsKeyDown(Keys.Down))
+                    physics.Direction += Vector2.UnitY;
+                if (keyboardState.IsKeyDown(Keys.Left))
+                    physics.Direction += -Vector2.UnitX;
+                if (keyboardState.IsKeyDown(Keys.Right))
+                    physics.Direction += Vector2.UnitX;
 
-            physics.Direction.Normalize();
-            physics.Velocity += physics.Direction * player.MaxSpeed * deltaTime;
+                physics.Direction.Normalize();
+                physics.Velocity += physics.Direction * player.MaxSpeed * deltaTime * 2;
 
-
-            if (mouseState.LeftButton == ButtonState.Pressed)
+                sprite.Play("Walk");
+            }
+            else if (mouseState.LeftButton == ButtonState.Pressed)
             {
                 // Accelerate
                 physics.Direction = Vector2.Normalize(_camera.ScreenToWorld(
@@ -80,16 +83,15 @@ namespace Retroherz.Systems
 
                 sprite.Play("Walk");
             }
-            else
-            {
-                // Slow down
-                var factor = deltaTime * -1;
-                physics.Velocity = new Vector2(
-                    MathHelper.LerpPrecise(0, physics.Velocity.X, MathF.Pow(2, factor)),
-                    MathHelper.LerpPrecise(0, physics.Velocity.Y, MathF.Pow(2, factor)));
+            else sprite.Play("Idle");
 
-                sprite.Play("Idle");
-            }
+            // Slow down
+            var factor = deltaTime * -1;
+            physics.Velocity = new Vector2(
+                MathHelper.LerpPrecise(0, physics.Velocity.X, MathF.Pow(2, factor)),
+                MathHelper.LerpPrecise(0, physics.Velocity.Y, MathF.Pow(2, factor)));
+
+            //sprite.Play("Idle");
                         //System.Console.WriteLine(physics.Velocity);
 
 
@@ -99,7 +101,7 @@ namespace Retroherz.Systems
                 MathHelper.LerpPrecise(physics.Position.Y, _camera.Center.Y, 0.1F * deltaTime));*/
 
             // Update camera
-            _camera.LookAt(physics.Position);
+            _camera.LookAt(physics.Position + physics.Origin);
         }
     }
 }

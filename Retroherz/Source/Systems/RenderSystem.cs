@@ -72,55 +72,47 @@ namespace Retroherz.Systems
                 _spriteBatch.DrawRectangle(bounds, Color.Green);
 
                 // Pilot rectangle
-                var deltaPosition = physics.Position + physics.Velocity * physics.Size * deltaTime;
-                var pilot = new RectangleF(deltaPosition, physics.Size);
+                var pilot = new RectangleF(physics.Position + physics.Velocity * deltaTime, physics.Size);
                 _spriteBatch.DrawRectangle(pilot, Color.Red);
 
-                var inflated = new RectangleF(physics.Position, physics.Size);
-                var factor = physics.Velocity * deltaTime; //* physics.Size.Length() * deltaTime;
-                factor = physics.Position - deltaPosition;
-                inflated.Inflate(MathF.Abs(factor.X), MathF.Abs(factor.Y));
-
+                // Search area
                 var minimum = Vector2.Min(bounds.TopLeft, pilot.TopLeft);
                 var maximum = Vector2.Max(bounds.BottomRight, pilot.BottomRight);
-
-                // Search area
-                inflated = new RectangleF(minimum, maximum - minimum);
+                var inflated = new RectangleF(minimum, maximum - minimum);
+                //inflated.Inflate(-1f, -1f);
                 _spriteBatch.DrawRectangle(inflated, Color.Yellow);
 
-                // Rays
-                foreach (var ray in physics.Rays)
+                // Contac info
+                var union = new RectangleF(physics.Position, physics.Size);
+                foreach (var contact in physics.ContactInfo)
                 {
-                    _spriteBatch.DrawPoint(ray.Item1, Color.BlueViolet, 4);
-                    _spriteBatch.DrawPoint(ray.Item2, Color.Red, 4);
-                    _spriteBatch.DrawLine(ray.Item2, ray.Item2 + ray.Item3 * 4, Color.White);
+                    // Normals
+                    _spriteBatch.DrawPoint(contact.Item2, Color.BlueViolet, 4);
+                    _spriteBatch.DrawPoint(contact.Item2, Color.Red, 4);
+                    _spriteBatch.DrawLine(contact.Item2, contact.Item2 + contact.Item3 * 8, Color.Red);
 
-                    // Inflated rays
-                    foreach (var area in physics.Inflated)
-                        _spriteBatch.DrawLine(ray.Item1, area.Position + area.Size / 2, Color.BlueViolet);
+                    // Rays
+                    _spriteBatch.DrawLine(contact.Item2, contact.Item1.Position + contact.Item1.Origin, Color.BlueViolet);
+
+                    // Inflated
+                    _spriteBatch.DrawRectangle(contact.Item1.Position - physics.Origin, contact.Item1.Size + physics.Size, Color.BlueViolet);
+                    
+                    // Contacts
+                    _spriteBatch.FillRectangle(contact.Item1.Position, contact.Item1.Size, Color.Yellow);
+
+                    union = union.Union(new RectangleF(contact.Item1.Position, contact.Item1.Size));
                 }
+                _spriteBatch.DrawRectangle(union, Color.GreenYellow);
 
-                // Inflated
-                foreach (var area in physics.Inflated)
-                    _spriteBatch.DrawRectangle(area.Position, area.Size, Color.BlueViolet);
 
                 // Embellish the "in contact" rectangles in yellow
-                /*for (int i = 0; i < 4; i++)
+                for (int i = 0; i < 4; i++)
                 {
                     if (physics.Contact[i] != null)
-                        _spriteBatch.FillRectangle(
-                            physics.Contact[i].Position, physics.Contact[i].Size, Color.Yellow);
+                        _spriteBatch.DrawPoint(
+                        physics.Contact[i].Position + physics.Contact[i].Origin, Color.Red, physics.Contact[i].Size.Length());
                     physics.Contact[i] = null;
-                }*/
-
-                foreach (var contact in physics.Contacts)
-                    for (var i = 0; i < 4; i++)
-                    {
-                        if (contact[i] != null)
-                            _spriteBatch.FillRectangle(contact[i].Position, contact[i].Size, Color.Yellow);
-
-                        contact[i] = null;
-                    }
+                }
 
                 /*WeaponComponent weapon = _weaponMapper.Get(entity);
                 SuperSprite sprite = _spriteMapper.Get(entity);
