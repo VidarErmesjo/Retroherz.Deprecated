@@ -136,7 +136,7 @@ namespace Retroherz
             // Access TileMapLayers
             //var whatIs = _tiledMap.GetLayer<TiledMapTileLayer>("Tile Layer 1");
             //var whatIs = _tiledMap.GetLayer("Tile Layer 1") as TiledMapTileLayer;
-            var whatIs = _tiledMap.TileLayers[0]; // can return null
+            //var whatIs = _tiledMap.TileLayers[0]; // can return null
 
             //whatIs.SetTile(1, 1, 1);
             
