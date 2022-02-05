@@ -79,7 +79,6 @@ namespace Retroherz.Systems
                 var minimum = Vector2.Min(bounds.TopLeft, pilot.TopLeft);
                 var maximum = Vector2.Max(bounds.BottomRight, pilot.BottomRight);
                 var inflated = new RectangleF(minimum, maximum - minimum);
-                //inflated.Inflate(-1f, -1f);
                 _spriteBatch.DrawRectangle(inflated, Color.Yellow);
 
                 // Contac info

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Linq;
 
 using Microsoft.Xna.Framework;
@@ -31,16 +32,15 @@ namespace Retroherz.Systems
         private ComponentMapper<ColliderComponent> _colliderCompomentMapper;
         private ComponentMapper<PhysicsComponent> _physicsComponentMapper;
 
-        public PhysicsSystem(TiledMap tiledMap)
+        public PhysicsSystem()
             : base(Aspect
                 .All(typeof(PhysicsComponent)))
         {
             //_tiledMap = tiledMap;
-            _tiledMap = tiledMap;
             _colliders = new Bag<PhysicsComponent>();
 
-            hub.Subscribe<TileMap>(this, payload => {
-                _tiles = payload.Tiles;
+            hub.Subscribe<GetTiledMap>(this, payload => {
+                _tiledMap = payload.TiledMap;
             });
         }
 
@@ -62,6 +62,28 @@ namespace Retroherz.Systems
                 _tiledMap.TileWidth,
                 _tiledMap.TileHeight));
 
+            // Restrict movement to world grid
+            if (physics.Position.X < 0)
+            {
+                physics.Position = physics.Position.SetX(0);
+                physics.Velocity = physics.Velocity.SetX(0);
+            }
+            else if (physics.Position.X > _tiledMap.WidthInPixels - physics.Size.X)
+            {
+                physics.Position = physics.Position.SetX(_tiledMap.WidthInPixels - physics.Size.X);
+                physics.Velocity = physics.Velocity.SetX(0);
+            }
+            else if (physics.Position.Y < 0)
+            {
+                physics.Position = physics.Position.SetY(0);
+                physics.Velocity = physics.Velocity.SetY(0);
+            }
+            else if (physics.Position.Y > _tiledMap.HeightInPixels - physics.Size.Y)
+            {
+                physics.Position = physics.Position.SetY(_tiledMap.HeightInPixels - physics.Size.Y);
+                physics.Velocity = physics.Velocity.SetY(0);
+            }
+
             // Get a subset of colliders
             EvaluateColliders(physics, deltaTime);
 
@@ -74,7 +96,7 @@ namespace Retroherz.Systems
             // Work out collision point ...
             physics.ContactInfo.Clear();
             foreach (var collider in _colliders)
-            {                                 
+            { 
                 if (Collides(
                     ref physics,
                     collider,
@@ -98,25 +120,17 @@ namespace Retroherz.Systems
             if (colliders.Count > 0)
             {
                 // Do the sort
-                //colliders.Sort((a, b) => a.Item2.CompareTo(b.Item2));
                 colliders.Sort((a, b) => a.Item2 < b.Item2 ? -1 : 1);
 
                 // Now resolve the collision in correct order
                 foreach (var collider in colliders)
                 {
-                    if(ResolveCollision(physics, collider.Item1, deltaTime));/*
+                    if(ResolveCollision(physics, collider.Item1, deltaTime))
                         hub.Publish<TiledMapSystemEvent>(new TiledMapSystemEvent(
                             TiledMapSystemAction.RemoveTile,
-                            collider.Item1.Position));*/
+                            collider.Item1.Position));
                 }
             }
-
-            // Remove Tile
-            /*foreach (var normal in physics.Contact)
-                if (normal != null)
-                    hub.Publish<TiledMapSystemEvent>(new TiledMapSystemEvent(
-                        TiledMapSystemAction.RemoveTile,
-                        normal.Position));*/
 
             // Update position
             physics.Position += physics.Velocity * deltaTime;
@@ -126,13 +140,13 @@ namespace Retroherz.Systems
         {
             // All dynamic colliders should be rounded to nearest integer to help with
             // moving through tight passages etc.
-            // Tiles are static and can be ignored.
+            // Tiles are static and can be ignored in this regard.
 
             // Bounding rectangle
             var bounds = new RectangleF(Vector2.Round(physics.Position), physics.Size);
 
             // Pilot rectangle
-            var pilot = new RectangleF(physics.Position + physics.Velocity * deltaTime * physics.Size, physics.Size);
+            var pilot = new RectangleF(physics.Position + physics.Velocity * deltaTime, physics.Size);
 
             // Inflated rectangle (search area)
             var minimum = Vector2.Min(bounds.TopLeft, pilot.TopLeft);
@@ -140,7 +154,7 @@ namespace Retroherz.Systems
             var inflated = new RectangleF(minimum, maximum - minimum);
 
             // Load tiles
-            var tiles = _tiledMap.TileLayers[0].Tiles.Where(x => !x.IsBlank);     
+            var tiles = _tiledMap.TileLayers[0].Tiles.Where(x => !x.IsBlank); 
 
             // Clear and add
             _colliders.Clear();
@@ -157,19 +171,6 @@ namespace Retroherz.Systems
                     _colliders.Add(wall);
             }
 
-            /*// Blarg??
-            foreach (var tile in _tiles.Where(tile => tile.Value.Type == TiledMapType.Solid))
-            {
-                var position = new Vector2(tile.Value.X * tile.Value.Width, tile.Value.Y * tile.Value.Height);
-                var size = new Vector2(tile.Value.Width, tile.Value.Height);
-                var candidate = new RectangleF(position, size);
-                System.Console.WriteLine("{0}, {1}", position, size);
-                var wall = new PhysicsComponent(position: position, size: size, type: PhysicsComponentType.Static);
-
-                if(inflated.Intersects(candidate))
-                    _colliders.Add(wall);
-            }*/
-
             // DYNAMIC colliders (OPTIMIZE???)
             foreach (var entityId in ActiveEntities)
             {
@@ -183,11 +184,12 @@ namespace Retroherz.Systems
             }
         }
 
-        ~PhysicsSystem() { hub.Unsubscribe<TileMap>(); }
+        ~PhysicsSystem() { hub.Unsubscribe<GetTiledMap>(); }
 
         // Courtesy of One Lone Coder
         // https://github.com/OneLoneCoder/olcPixelGameEngine/blob/master/Videos/OneLoneCoder_PGE_Rectangles.cpp
         
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Swap<T>(ref T a, ref T b) => (a, b) = (b, a);
 
         private bool Intersects(
@@ -201,13 +203,24 @@ namespace Retroherz.Systems
             contactPoint = Vector2.Zero;
             contactNormal = Vector2.Zero;
 
-            // Cache division
+            var outOfBounds = target.Position.X < 0 || target.Position.Y < 0;
+
+            // To not confuse the algorithm we shift target position and ray origin
+            // to force upcomming calculations over to the positiv axes.
+            // - VE
+            if (outOfBounds)
+            {
+                target.Position += target.Size;
+                rayOrigin += target.Size;
+            }
+
+             // Cache division
             var inverseDirection = Vector2.One / rayDirection;
 
             // Calculate intersections with rectangle boundings axes
             var targetNear = (target.Position - rayOrigin) * inverseDirection;
             var targetFar = (target.Position + target.Size - rayOrigin) * inverseDirection;
-
+          
             if (float.IsNaN(targetFar.X) || float.IsNaN(targetFar.Y)) return false;
             if (float.IsNaN(targetNear.X) || float.IsNaN(targetNear.Y)) return false;
 
@@ -221,32 +234,33 @@ namespace Retroherz.Systems
             // Closest 'time' will be the first contact
             timeHitNear = MathF.Max(targetNear.X, targetNear.Y);
 
+            // For a correct calculation of contact point we shift ray origin back
+            // - VE
+            if (outOfBounds) rayOrigin -= target.Size;
+
             // Furthest 'time' is contact on opposite side of target
             var timeHitFar = MathF.Min(targetFar.X, targetFar.Y);
             
             // Reject if ray directon is pointing away from object (can be usefull)
             if (timeHitFar < 0) return false;
 
-            // Seems to help with weird through-walls cases
-            // Note: Might sticks to wall => Fringe condition handled in resolve
-            // - VE
-            if (timeHitNear < 0) timeHitNear = 0;
-
             // Contact point of collision from parametric line equation
             contactPoint = rayOrigin + timeHitNear * rayDirection;
 
             if (targetNear.X > targetNear.Y)
-                contactNormal = inverseDirection.X < 0 ? Vector2.UnitX : -Vector2.UnitX;
-                /*if (inverseDirection.X < 0) contactNormal = new Vector2(1, 0);
-                else contactNormal = new Vector2(-1, 0);*/
+                //contactNormal = inverseDirection.X < 0 ? Vector2.UnitX : -Vector2.UnitX;
+                if (inverseDirection.X < 0)
+                    contactNormal = new Vector2(1, 0);
+                else
+                    contactNormal = new Vector2(-1, 0);
             else if (targetNear.X < targetNear.Y)
-                contactNormal = inverseDirection.Y < 0 ? Vector2.UnitY : -Vector2.UnitY;
-                /*if (inverseDirection.Y < 0) contactNormal = new Vector2(0, 1);
-                else contactNormal = new Vector2(0, -1);*/
+                //contactNormal = inverseDirection.Y < 0 ? Vector2.UnitY : -Vector2.UnitY;
+                if (inverseDirection.Y < 0)
+                    contactNormal = new Vector2(0, 1);
+                else
+                    contactNormal = new Vector2(0, -1);
 
-            //System.Console.WriteLine("{0}, {1}, {2}. {3}, {4}, {5}", timeHitNear, timeHitFar, rayOrigin, contactPoint, contactNormal, targetNear == targetFar);
-
-			// Note if targetNear == targetFar, collision is principly in a diagonal
+    		// Note if targetNear == targetFar, collision is principly in a diagonal
 			// so pointless to resolve. By returning a CN={0,0} even though its
 			// considered a hit, the resolver wont change anything.
 
@@ -261,6 +275,7 @@ namespace Retroherz.Systems
             ref float contactTime,
             float deltaTime)
         {
+               
             // Check if rectangle is actually moving - we assume rectangles are NOT in collision on start
             if (collider.Velocity == Vector2.Zero) return false;
 
@@ -272,7 +287,7 @@ namespace Retroherz.Systems
             // Calculate ray vectors
             var rayOrigin = collider.Position + collider.Origin;
             var rayDirection = collider.Velocity * deltaTime;
-          
+         
             // Cast ray
             if (Intersects(
                 rayOrigin,
@@ -309,19 +324,11 @@ namespace Retroherz.Systems
                 collider.Contact[2] = contactNormal.Y < 0 ? obstacle : null;
                 collider.Contact[3] = contactNormal.X > 0 ? obstacle : null;
 
-                // Fringe condition
-                // - VE
-                if (contactPoint.X <= collider.Size.X)
-                    collider.Position = new Vector2(obstacle.Size.X, collider.Position.Y);
-                if (contactPoint.Y < collider.Size.Y)
-                    collider.Position = new Vector2(collider.Position.X, obstacle.Size.Y);
 
                 // Displace
                 collider.Velocity += contactNormal * new Vector2(
                     MathF.Abs(collider.Velocity.X),
                     MathF.Abs(collider.Velocity.Y)) * (1 - contactTime);
- 
-                //System.Console.WriteLine("{0}, {1}, {2}. {3}", contactTime, collider.Origin, contactPoint, contactNormal);
 
                 return true;
             }

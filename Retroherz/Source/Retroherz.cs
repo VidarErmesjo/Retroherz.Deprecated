@@ -119,7 +119,7 @@ namespace Retroherz
                 .AddSystem(new PlayerSystem(GameManager.Camera))
                 .AddSystem(new TiledMapSystem(_tiledMap, GraphicsDevice, GameManager.Camera))
                 //.AddSystem(new ColliderSystem(_tiledMap))
-                .AddSystem(new PhysicsSystem(_tiledMap))
+                .AddSystem(new PhysicsSystem())
                 .AddSystem(new RaySystem())
                 .AddSystem(new RenderSystem(GraphicsDevice, GameManager.Camera))
                 .Build();

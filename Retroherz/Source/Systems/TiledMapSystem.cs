@@ -62,8 +62,6 @@ namespace Retroherz.Systems
 
         private void RemoveTile(ushort x, ushort y) { _tiledMap.TileLayers[0].RemoveTile(x, y); }
 
-        public TiledMap TiledMap { get => _tiledMap; }
-
         public TiledMapSystem(TiledMap tiledMap, GraphicsDevice graphics, OrthographicCamera camera)
         {
             _camera = camera;
@@ -85,18 +83,14 @@ namespace Retroherz.Systems
                 var x = ((ushort)MathHelper.Clamp(location.X, ushort.MinValue, ushort.MaxValue));
                 var y = ((ushort)MathHelper.Clamp(location.Y, ushort.MinValue, ushort.MaxValue));
 
+                // Handle actions
                 switch (payload.Action)
                 {
                     case TiledMapSystemAction.RemoveTile:
-                        RemoveTile(x, y);
+                        //RemoveTile(x, y);
+                        _tiledMap.TileLayers[0].RemoveTile(x, y);
                         _tiledMapRenderer.LoadMap(_tiledMap);
                         break;
-
-                    case TiledMapSystemAction.GetTiles:
-                        payload.TileWidth = _tiledMap.TileWidth;
-                        payload.TileHeight = _tiledMap.TileHeight;
-                        break;
-
                     default:
                         break;                   
                 }
@@ -115,7 +109,7 @@ namespace Retroherz.Systems
                         index,
                         new Tile(
                             x,
-                            y,
+                            x,
                             ((ushort)_tiledMap.TileWidth),
                             ((ushort)_tiledMap.TileHeight),
                             tile.IsBlank ? TiledMapType.Empty : TiledMapType.Solid));
@@ -130,7 +124,7 @@ namespace Retroherz.Systems
             //_tiledMapRenderer.LoadMap(_tiledMapComponentMapper.t().TiledMap);
             //var payload = new TiledMapSystemEvent(TiledMapSystemAction.GetTiles);
             //hub.Publish<TiledMapSystemEvent>(payload);
-            hub.Publish(new TileMap(_tiles));
+            hub.Publish(new GetTiledMap(_tiledMap));
         }
 
         public virtual void Update(GameTime gameTime)
@@ -141,6 +135,14 @@ namespace Retroherz.Systems
         public virtual void Draw(GameTime gameTime)
         {
             _tiledMapRenderer.Draw(_camera.GetViewMatrix());
+
+            var factor = 1.1f;
+            var scaled = new OrthographicCamera(_spriteBatch.GraphicsDevice);
+            scaled.Position = _camera.Position;
+            //scaled.LookAt(_camera.Position);
+            scaled.ZoomIn(16);
+            _tiledMapRenderer.Draw(scaled.GetViewMatrix());
+            
         }
 
         public void Dispose()
@@ -170,19 +172,20 @@ namespace Retroherz.Systems
         }
     }
 
-    public class TileMap
+    public class GetTiledMap
     {
-        public Dictionary<int, Tile> Tiles { get; }
+        //public Dictionary<int, Tile> Tiles { get; }
+        public TiledMap TiledMap { get; }
 
-        public TileMap(Dictionary<int, Tile> tiles) { Tiles = tiles; }
+        //public TileMap(Dictionary<int, Tile> tiles) { Tiles = tiles }
+        public GetTiledMap(TiledMap tiledMap) { TiledMap = tiledMap; }
+
+        ~GetTiledMap() {}
     }
 
     public class TiledMapSystemEvent
     {
         public TiledMapSystemAction Action { get; set; }
-        public TiledMap TiledMap { get; set; }
-        public int TileWidth { get ; set; }
-        public int TileHeight { get; set; }
         public Vector2 Location { get; }
 
         public TiledMapSystemEvent(

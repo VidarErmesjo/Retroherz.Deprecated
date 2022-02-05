@@ -16,20 +16,17 @@ namespace Retroherz.Systems
 {
     public class RaySystem : EntityProcessingSystem
     {
+        private TiledMap _tiledMap;
         private Hub hub = Hub.Default;
         private ComponentMapper<PhysicsComponent> _physicsComponentMapper;
         private ComponentMapper<RayComponent> _rayComponentMapper;
 
-        private TiledMapSystemEvent QueryTiledMapSystem()
-        {
-            var payload = new TiledMapSystemEvent(TiledMapSystemAction.GetTiles);
-            hub.Publish<TiledMapSystemEvent>(payload);
-            return payload;
-        }
-
         public RaySystem()
             : base(Aspect.All(typeof(PhysicsComponent), typeof(RayComponent)))
         {
+            hub.Subscribe<GetTiledMap>(this, payload => {
+                _tiledMap = payload.TiledMap;
+            });
         }
 
         public override void Initialize(IComponentMapperService mapperService)
@@ -44,14 +41,13 @@ namespace Retroherz.Systems
             var mouseState = Mouse.GetState();
             var physics = _physicsComponentMapper.Get(entityId);
             var ray = _physicsComponentMapper.Get(entityId);
-            var tiledMapSystem = QueryTiledMapSystem();
 
             // DDA Algorithm ==============================================
 		    // https://lodev.org/cgtutor/raycasting.html
 
             Vector2 mouseCell = new Vector2(mouseState.X, mouseState.Y) / new Vector2(
-                tiledMapSystem.TileWidth,
-                tiledMapSystem.TileHeight);
+                _tiledMap.TileWidth,
+                _tiledMap.TileHeight);
 
             Size2 cell = mouseCell;
 
