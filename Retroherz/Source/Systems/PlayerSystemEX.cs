@@ -14,31 +14,28 @@ using Retroherz.Components;
 
 namespace Retroherz.Systems
 {
-    public class PlayerSystem : EntityProcessingSystem
+    public class PlayerSystemEX : EntityProcessingSystem
     {
         private readonly OrthographicCamera _camera;
-        private ComponentMapper<ColliderComponent> _colliderComponentMapper;
-        private ComponentMapper<PlayerComponent> _playerComponentMapper;
         private ComponentMapper<SpriteComponent> _spriteComponentMapper;
-        private ComponentMapper<TransformComponent> _transformComponentMapper;
+        private ComponentMapper<PlayerComponent> _playerComponentMapper;
+        private ComponentMapper<PhysicsComponent> _physicsComponentMapper;
 
-        public PlayerSystem(OrthographicCamera camera)
+        public PlayerSystemEX(OrthographicCamera camera)
             : base(Aspect
                 .All(
-                    typeof(ColliderComponent),
-                    typeof(PlayerComponent),
                     typeof(SpriteComponent),
-                    typeof(TransformComponent)))
+                    typeof(PlayerComponent),
+                    typeof(PhysicsComponent)))
         {
             _camera = camera;
         }
 
         public override void Initialize(IComponentMapperService mapperService)
         {
-            _colliderComponentMapper = mapperService.GetMapper<ColliderComponent>();
-            _playerComponentMapper = mapperService.GetMapper<PlayerComponent>();
             _spriteComponentMapper = mapperService.GetMapper<SpriteComponent>();
-            _transformComponentMapper = mapperService.GetMapper<TransformComponent>();
+            _playerComponentMapper = mapperService.GetMapper<PlayerComponent>();
+            _physicsComponentMapper = mapperService.GetMapper<PhysicsComponent>();
         }
 
         public override void Process(GameTime gameTime, int entityId)
@@ -46,15 +43,15 @@ namespace Retroherz.Systems
             var mouseState = Mouse.GetState();
             var keyboardState = Keyboard.GetState();
             var deltaTime = gameTime.GetElapsedSeconds();
-
-            var collider = _colliderComponentMapper.Get(entityId);           
+            
             var player = _playerComponentMapper.Get(entityId);
             var sprite = _spriteComponentMapper.Get(entityId);
-            var transform = _transformComponentMapper.Get(entityId);
+            var physics = _physicsComponentMapper.Get(entityId);
 
             var direction = Vector2.Zero;
             if (keyboardState.GetPressedKeyCount() > 0)
             {
+                direction = Vector2.Zero;
                 if (keyboardState.IsKeyDown(Keys.Up))
                     direction += -Vector2.UnitY;
                 if (keyboardState.IsKeyDown(Keys.Down))
@@ -71,10 +68,7 @@ namespace Retroherz.Systems
                 // Important! Must check if is NaN
                 if(direction.IsNaN()) direction = Vector2.Zero;
 
-                collider.Velocity += direction * player.MaxSpeed * deltaTime * 2;
-
-               /* if (keyboardState.IsKeyDown(Keys.Space))
-                    collider.Velocity = new Vector2(collider.Velocity.X, -100f);*/
+                physics.Velocity += direction * player.MaxSpeed * deltaTime * 2;
 
                 sprite.Play("Walk");
             }
@@ -82,28 +76,29 @@ namespace Retroherz.Systems
             {
                 // Accelerate
                 direction = Vector2.Normalize(_camera.ScreenToWorld(
-                    new Vector2(mouseState.X, mouseState.Y)) - transform.Position - collider.Origin);
+                    new Vector2(mouseState.X, mouseState.Y)) - physics.Position - physics.Origin);
 
-                collider.Velocity += direction * player.MaxSpeed * deltaTime;
+                physics.Velocity += direction * player.MaxSpeed * deltaTime;
                 
-                /*collider.Velocity = new Vector2((
-                    MathHelper.Clamp(collider.Velocity.X, -player.MaxSpeed, player.MaxSpeed)),
-                    MathHelper.Clamp(collider.Velocity.Y, -player.MaxSpeed, player.MaxSpeed));*/
+                physics.Velocity = new Vector2((
+                    MathHelper.Clamp(physics.Velocity.X, -player.MaxSpeed, player.MaxSpeed)),
+                    MathHelper.Clamp(physics.Velocity.Y, -player.MaxSpeed, player.MaxSpeed));
 
                 sprite.Play("Walk");
             }
             else sprite.Play("Idle");
 
             // Slow down
-            /*var factor = deltaTime * -1;
-            collider.Velocity = new Vector2(
-                MathHelper.LerpPrecise(0, collider.Velocity.X, MathF.Pow(2, factor)),
-                MathHelper.LerpPrecise(0, collider.Velocity.Y, MathF.Pow(2, factor)));*/
-            
-            //collider.Velocity = new Vector2(collider.Velocity.X, collider.Velocity.Y + 9.81f);
-            
+            var factor = deltaTime * -1;
+            physics.Velocity = new Vector2(
+                MathHelper.LerpPrecise(0, physics.Velocity.X, MathF.Pow(2, factor)),
+                MathHelper.LerpPrecise(0, physics.Velocity.Y, MathF.Pow(2, factor)));
+
+            //sprite.Play("Idle");
+                        //System.Console.WriteLine(physics.Velocity);
+
             // Update camera
-            _camera.LookAt(transform.Position + collider.Origin);
+            _camera.LookAt(physics.Position + physics.Origin);
         }
     }
 }

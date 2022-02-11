@@ -1,14 +1,12 @@
-namespace MonoGame
+namespace Retroherz.Components
 {
     public class ExpiryComponent
     {
         public float TimeRemaining { get; set; }
-        public bool isPersistent { get; set; }
 
-        public ExpiryComponent(float timeRemaining, bool isPersistent = false)
+        public ExpiryComponent(float timeRemaining)
         {
             TimeRemaining = timeRemaining;
-            this.isPersistent = isPersistent;
         }
     }
 }

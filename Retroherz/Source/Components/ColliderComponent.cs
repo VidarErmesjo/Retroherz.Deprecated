@@ -1,126 +1,150 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
+using MonoGame.Extended.Collections;
 using MonoGame.Extended.Collisions;
+
+using Retroherz.Systems;
 
 namespace Retroherz.Components
 {
+    public enum ColliderComponentType
+    {
+        Static,
+        Dynamic,
+        Border
+    }
+
+    public enum ResolveCollision
+    {
+        Stop,
+        Slide,
+        Bounce
+    }
+
+    public enum Side
+    {
+        North,
+        East,
+        South,
+        West
+    }
+
+    // ActorComponent?
     public class ColliderComponent : ICollisionActor
     {
-        public enum ColliderComponentType
-        {
-            Dynamic,
-            Static//, Wall
-        }
-
+        public Vector2 Velocity { get; set; }
+        public Vector2 Size { get; set; }
+        public Vector2 Origin { get; set; }
         public ColliderComponentType Type { get; set; }
+
+        public Nullable<(ColliderComponent, TransformComponent)>[] Contact;
 
         public IShapeF Bounds { get; }
 
-        public Vector2 PenetrationNormal { get; set; }
+        // EXP
+        public Bag<((ColliderComponent collider, TransformComponent tranform), Vector2 contactPoint, Vector2 contactNormal, float contactTime)> ContactInfo;
 
-        public ColliderComponent[] Contact = new ColliderComponent[4];
+        public Bag<Vector2> PenetrationVectors;
 
-        public ColliderComponent(IShapeF bounds, ColliderComponentType type = default(ColliderComponentType))
+        public ColliderComponent(ColliderComponent colliderComponent)
         {
-            Bounds = bounds;
-            Type = type;
-            Contact[0] = null;
-            Contact[1] = null;
-            Contact[2] = null;
-            Contact[3] = null;
+            Velocity = colliderComponent.Velocity;
+            Size = colliderComponent.Size;
+            Origin = colliderComponent.Origin;
+            Contact = colliderComponent.Contact;
+            ContactInfo = colliderComponent.ContactInfo;
+            Type = colliderComponent.Type;
         }
 
-        ~ColliderComponent() {}
+        public ColliderComponent(
+            Vector2 velocity = default(Vector2),
+            Vector2 size = default(Vector2),
+            ColliderComponentType type = default(ColliderComponentType))
+        {
+            Velocity = velocity;
+            Size = size;
+            Origin = size / 2;
+
+            Contact = new Nullable<(ColliderComponent, TransformComponent)>[4] { null, null , null, null };
+
+            ContactInfo = new Bag<((ColliderComponent, TransformComponent), Vector2, Vector2, float)>();
+
+            Type = type;
+        }
+
+        /*public ColliderComponent(
+            IShapeF bounds,
+            Vector2 velocity = default(Vector2),
+            ColliderComponentType type = default(ColliderComponentType))
+        {
+            Bounds = bounds;
+            Velocity = velocity;
+            Type = type;
+
+            var size = (RectangleF) bounds;
+            Size = new Vector2(size.Width, size.Height);
+            Origin = Size / 2;
+
+            Contact = new Nullable<(ColliderComponent, TransformComponent)>[4] { null, null , null, null };
+            ContactInfo = new Bag<((ColliderComponent, TransformComponent), Vector2, Vector2, float)>();
+            PenetrationVectors = new Bag<Vector2>(5);
+
+        }*/
 
         public void OnCollision(CollisionEventArgs collisionEventArgs)
         {
-            this.PenetrationNormal = Vector2.Zero;
+            System.Console.WriteLine("{0} => {1}", Type, collisionEventArgs.PenetrationVector.NormalizedCopy());
+            var other = (ColliderComponent) collisionEventArgs.Other;
+            var transform = new TransformComponent(position: other.Bounds.Position);
 
-            switch (this.Type)
+            switch (Type)
             {
                 case ColliderComponentType.Static:
-                    return;
-                case ColliderComponentType.Dynamic:
-                {
-                    var other = (ColliderComponent) collisionEventArgs.Other;
-                    //other.Bounds.Position += collisionEventArgs.PenetrationVector;
-                    this.Bounds.Position -= collisionEventArgs.PenetrationVector;
-                    this.PenetrationNormal = collisionEventArgs.PenetrationVector.NormalizedCopy();
-                    this.Contact[0] = PenetrationNormal.Y > 0 ? other : null;   // SOUTH
-                    this.Contact[1] = PenetrationNormal.X < 0 ? other : null;   // WEST
-                    this.Contact[2] = PenetrationNormal.Y < 0 ? other : null;   // NORTH
-                    this.Contact[3] = PenetrationNormal.X > 0 ? other : null;   // EAST
                     break;
-                }
+                case ColliderComponentType.Dynamic:
+                    //Bounds.Position -= collisionEventArgs.PenetrationVector;
+
+                    Contact[0] = collisionEventArgs.PenetrationVector.Y > 0 ? (other, transform) : null;
+                    Contact[1] = collisionEventArgs.PenetrationVector.X < 0 ? (other, transform) : null;
+                    Contact[2] = collisionEventArgs.PenetrationVector.Y < 0 ? (other, transform) : null;
+                    Contact[3] = collisionEventArgs.PenetrationVector.X > 0 ? (other, transform) : null;
+                    ContactInfo.Add(((other, transform), Vector2.Zero, Vector2.Zero, 0.0f));
+                    PenetrationVectors.Add(collisionEventArgs.PenetrationVector);
+
+                    /*if(collisionEventArgs.PenetrationVector.X < 0 || collisionEventArgs.PenetrationVector.X > 0)
+                        Velocity = Velocity.SetX(0);
+                    if(collisionEventArgs.PenetrationVector.Y < 0 || collisionEventArgs.PenetrationVector.Y > 0)
+                        Velocity = Velocity.SetY(0);*/
+
+                    if (collisionEventArgs.PenetrationVector.X < 0)
+                        if (Velocity.X < 0) Velocity = Velocity.SetX(0);
+                    if (collisionEventArgs.PenetrationVector.X > 0)
+                        if (Velocity.X > 0) Velocity = Velocity.SetX(0);
+                    if (collisionEventArgs.PenetrationVector.Y < 0)
+                        if (Velocity.Y < 0) Velocity = Velocity.SetY(0);
+                    if (collisionEventArgs.PenetrationVector.Y > 0)
+                        if (Velocity.Y > 0) Velocity = Velocity.SetY(0);
+
+                    if (other.Type == ColliderComponentType.Static);
+                        //System.Console.WriteLine("STATIC");
+                    else if (other.Type == ColliderComponentType.Dynamic)
+                    {
+                        //other.Velocity += collisionEventArgs.PenetrationVector * 32;
+                        other.Velocity *= -1;
+                        //System.Console.WriteLine("DYNAMIC");
+                    }
+                    else if (other.Type == ColliderComponentType.Border);
+                        //System.Console.WriteLine("BORDER");
+
+                    break;
                 default:
                     break;
             }
         }
 
-        // DrawRectangle()
-        public static implicit operator RectangleF(ColliderComponent colliderComponent)
-        {
-            if(colliderComponent.Bounds.GetType() == typeof(CircleF))
-                return RectangleF.Empty;
+        // ToString() Position: {X:180.2995 Y:64}, Rotation: 0, Scale: {X:0 Y:0}, Retroherz.Components.ColliderComponent
 
-            var rectangle = (RectangleF) colliderComponent.Bounds;
-            return new RectangleF(rectangle.Position, rectangle.Size);
-        }
-        
-        // DrawCircle()
-        public static implicit operator CircleF(ColliderComponent colliderComponent)
-        {
-            if(colliderComponent.Bounds.GetType() == typeof(RectangleF))
-                return new CircleF(Point2.NaN, 0);
-
-            var circle = (CircleF) colliderComponent.Bounds;
-            return new CircleF(circle.Center, circle.Radius);
-        }
-
-        public static implicit operator Vector2(ColliderComponent colliderComponent)
-        {
-            var output = Vector2.Zero;
-            var type = colliderComponent.Bounds.GetType();
-
-            if (type == typeof(RectangleF))
-            {
-                var rectangle = (RectangleF) colliderComponent.Bounds;
-                output = new Vector2(rectangle.Width, rectangle.Height);
-            }
-            else if (type == typeof(CircleF))
-            {
-                var circle = (CircleF) colliderComponent.Bounds;
-                output = new Vector2(circle.Radius, circle.Radius);
-            }
-
-            return output;
-        }
-
-        public static implicit operator Point2(ColliderComponent colliderComponent)
-        {
-            var rectangle = (RectangleF) colliderComponent.Bounds;
-            return new Point2(rectangle.Width, rectangle.Height);
-        }
-
-        public static implicit operator Size2(ColliderComponent colliderComponent)
-        {
-            var rectangle = (RectangleF) colliderComponent.Bounds;
-            return new Size2(rectangle.Width, rectangle.Height);
-        }
-
-        /*public static implicit operator CollisionActor(ColliderComponent colliderComponent)
-        {
-            if (colliderComponent.Bounds.GetType() == typeof(RectangleF))
-                colliderComponent.Bounds.Position -= Vector2.One * 8;
-
-            return colliderComponent;
-        }*/
-
-        public override string ToString() => this.Bounds.ToString();
+        ~ColliderComponent() {}
     }
 }

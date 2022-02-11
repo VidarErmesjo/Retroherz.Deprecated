@@ -74,9 +74,11 @@ namespace Retroherz
             var player = _world.CreateEntity();
             player.Attach(new PlayerComponent());
             player.Attach(new SpriteComponent(ref asepriteDocument));
-            player.Attach(new ColliderComponent(rectangle));
-            player.Attach(new RayComponent());
-            player.Attach(new PhysicsComponent(position: position, size: size));
+            player.Attach(new TransformComponent(position: position));
+            player.Attach(new ColliderComponent(size: size, type: ColliderComponentType.Dynamic));
+            //player.Attach(new ColliderComponent(bounds: rectangle, type: ColliderComponentType.Dynamic));
+            //player.Attach(new RayComponent());
+            //player.Attach(new PhysicsComponent(position: position, size: size));
 
             return player.Id;
         }
@@ -85,14 +87,17 @@ namespace Retroherz
         {
             var position = Vector2.One * 16 * 2;
             var size = new Size2(16f, 16f);
-            var velocity = Vector2.One * _random.NextSingle(-1, 1) * 16;
+            var velocity = new Vector2(size.Width, size.Height * 0.75f);
             var rectangle = new RectangleF(position, size);
             var asepriteDocument = AssetsManager.Sprite("Shitsprite");
 
             var actor = _world.CreateEntity();
             actor.Attach(new SpriteComponent(ref asepriteDocument));
-            actor.Attach(new ColliderComponent(rectangle));
-            actor.Attach(new PhysicsComponent(position: position, velocity: velocity, size: size));
+            actor.Attach(new TransformComponent(position: position));
+            actor.Attach(new ColliderComponent(velocity: velocity, size: size, type: ColliderComponentType.Dynamic));
+            //actor.Attach(new ColliderComponent(bounds: rectangle, velocity: velocity, type: ColliderComponentType.Dynamic));
+
+            //actor.Attach(new PhysicsComponent(position: position, velocity: velocity, size: size));
 
             return actor.Id;
         }
@@ -112,15 +117,13 @@ namespace Retroherz
             HUD.Initialize();
 
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-
-            _random = new FastRandom((Math.Abs((int)DateTime.Now.Ticks)));
-  
+ 
             _world = new WorldBuilder()
-                .AddSystem(new PlayerSystem(GameManager.Camera))
                 .AddSystem(new TiledMapSystem(_tiledMap, GraphicsDevice, GameManager.Camera))
-                //.AddSystem(new ColliderSystem(_tiledMap))
-                .AddSystem(new PhysicsSystem())
-                .AddSystem(new RaySystem())
+                .AddSystem(new ExpirySystem())
+                .AddSystem(new PlayerSystem(GameManager.Camera))
+                .AddSystem(new ColliderSystem(_tiledMap, GameManager.Camera))
+                .AddSystem(new UpdateSystem())
                 .AddSystem(new RenderSystem(GraphicsDevice, GameManager.Camera))
                 .Build();
             //_world.Initialize();

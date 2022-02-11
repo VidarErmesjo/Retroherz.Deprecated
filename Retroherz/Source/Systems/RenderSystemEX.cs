@@ -13,8 +13,8 @@ using Retroherz.Components;
 
 namespace Retroherz.Systems
 {
-    // DrawSystem => RenderSystem??
-    public class RenderSystem : EntityDrawSystem, IDisposable
+    // DrawSystem => RenderSystemEX??
+    public class RenderSystemEX : EntityDrawSystem, IDisposable
     {
         private bool _isDisposed = false;
 
@@ -23,13 +23,12 @@ namespace Retroherz.Systems
         private readonly OrthographicCamera _camera;
         private readonly RenderTarget2D _renderTarget;
 
-        private ComponentMapper<ColliderComponent> _colliderComponentMapper;
         private ComponentMapper<SpriteComponent> _spriteComponentMapper;
-        private ComponentMapper<TransformComponent> _transformComponentMapper;
+        private ComponentMapper<PhysicsComponent> _physicsComponentMapper;
 
-        public RenderSystem(GraphicsDevice graphicsDevice, OrthographicCamera camera)
+        public RenderSystemEX(GraphicsDevice graphicsDevice, OrthographicCamera camera)
             : base(Aspect
-                .All(typeof(ColliderComponent), typeof(SpriteComponent), typeof(TransformComponent)))
+                .All(typeof(SpriteComponent), typeof(PhysicsComponent)))
         {
             _camera = camera;
             _graphicsDevice = graphicsDevice;
@@ -38,9 +37,8 @@ namespace Retroherz.Systems
 
         public override void Initialize(IComponentMapperService mapperService)
         {
-            _colliderComponentMapper = mapperService.GetMapper<ColliderComponent>();
-            _transformComponentMapper = mapperService.GetMapper<TransformComponent>();
             _spriteComponentMapper = mapperService.GetMapper<SpriteComponent>();
+            _physicsComponentMapper = mapperService.GetMapper<PhysicsComponent>();
         }
 
         public override void Draw(GameTime gameTime)
@@ -54,20 +52,21 @@ namespace Retroherz.Systems
             var deltaTime = gameTime.GetElapsedSeconds();
             foreach(var entityId in ActiveEntities)
             {
-                var collider = _colliderComponentMapper.Get(entityId);
                 var sprite = _spriteComponentMapper.Get(entityId);
-                var transform = _transformComponentMapper.Get(entityId);
+                var physics = _physicsComponentMapper.Get(entityId);
 
-                // Sprite
-                if(sprite != null)
+                // SpriteSystem
+                sprite.Scale = new Vector2(physics.Size.X, physics.Size.Y);
+                sprite.Position = physics.Position;
+                sprite.Update(gameTime);
                 sprite.Draw(_spriteBatch);
 
                 // Bounding rectangle
-                var bounds = new RectangleF(transform.Position, collider.Size);
+                var bounds = new RectangleF(physics.Position, physics.Size);
                 _spriteBatch.DrawRectangle(bounds, Color.Green);
 
                 // Pilot rectangle
-                var pilot = new RectangleF(transform.Position + collider.Velocity * deltaTime, collider.Size);
+                var pilot = new RectangleF(physics.Position + physics.Velocity * deltaTime, physics.Size);
                 _spriteBatch.DrawRectangle(pilot, Color.Red);
 
                 // Search area
@@ -77,8 +76,8 @@ namespace Retroherz.Systems
                 _spriteBatch.DrawRectangle(inflated, Color.Yellow);
 
                 // Contac info
-                var union = new RectangleF(transform.Position, collider.Size);
-                foreach (var contact in collider.ContactInfo)
+                var union = new RectangleF(physics.Position, physics.Size);
+                foreach (var contact in physics.ContactInfo)
                 {
                     // Normals
                     _spriteBatch.DrawPoint(contact.Item2, Color.BlueViolet, 4);
@@ -86,44 +85,26 @@ namespace Retroherz.Systems
                     _spriteBatch.DrawLine(contact.Item2, contact.Item2 + contact.Item3 * 8, Color.Red);
 
                     // Rays
-                    _spriteBatch.DrawLine(
-                        contact.Item2,
-                        contact.Item1.Item2.Position + contact.Item1.Item1.Origin,
-                        Color.BlueViolet);
+                    _spriteBatch.DrawLine(contact.Item2, contact.Item1.Position + contact.Item1.Origin, Color.BlueViolet);
 
                     // Inflated
-                    _spriteBatch.DrawRectangle(
-                        contact.Item1.Item2.Position - collider.Origin,
-                        contact.Item1.Item1.Size + collider.Size,
-                        Color.BlueViolet);
+                    _spriteBatch.DrawRectangle(contact.Item1.Position - physics.Origin, contact.Item1.Size + physics.Size, Color.BlueViolet);
                     
                     // Contacts
-                    _spriteBatch.FillRectangle(
-                        contact.Item1.Item2.Position,
-                        contact.Item1.Item1.Size,
-                        Color.Yellow);
+                    _spriteBatch.FillRectangle(contact.Item1.Position, contact.Item1.Size, Color.Yellow);
 
-                    union = union.Union(new RectangleF(contact.Item1.Item2.Position, contact.Item1.Item1.Size));
+                    union = union.Union(new RectangleF(contact.Item1.Position, contact.Item1.Size));
                 }
-                collider.ContactInfo.Clear();
-                //_spriteBatch.DrawRectangle(union, Color.GreenYellow);
-
-                if (collider.Bounds != null)
-                    if(collider.Type == ColliderComponentType.Border)
-                        _spriteBatch.FillRectangle((RectangleF) collider.Bounds, Color.Blue);
-                    else
-                        _spriteBatch.DrawRectangle((RectangleF) collider.Bounds, Color.Red);
+                _spriteBatch.DrawRectangle(union, Color.GreenYellow);
 
 
                 // Embellish the "in contact" rectangles in yellow
                 for (int i = 0; i < 4; i++)
                 {
-                    if (collider.Contact[i] != null)
+                    if (physics.Contact[i] != null)
                         _spriteBatch.DrawPoint(
-                        collider.Contact[i].Value.Item2.Position + collider.Contact[i].Value.Item1.Origin,
-                        Color.Red,
-                        collider.Contact[i].Value.Item1.Size.Length());
-                    collider.Contact[i] = null;
+                        physics.Contact[i].Position + physics.Contact[i].Origin, Color.Red, physics.Contact[i].Size.Length());
+                    physics.Contact[i] = null;
                 }
             }
 
@@ -144,5 +125,6 @@ namespace Retroherz.Systems
 
             _isDisposed = true;
         }
+
     }
 }

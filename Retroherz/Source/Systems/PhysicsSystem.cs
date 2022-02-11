@@ -20,7 +20,7 @@ namespace Retroherz.Systems
 
     }
 
-    public class PhysicsSystem : EntityProcessingSystem
+    public class PhysicsSystem : EntityUpdateSystem
     {
         Hub hub = Hub.Default;
 
@@ -29,12 +29,10 @@ namespace Retroherz.Systems
         private readonly Bag<PhysicsComponent> _colliders;
         private TiledMap _tiledMap;
         private Dictionary<int, Tile> _tiles;
-        private ComponentMapper<ColliderComponent> _colliderCompomentMapper;
         private ComponentMapper<PhysicsComponent> _physicsComponentMapper;
 
-        public PhysicsSystem()
-            : base(Aspect
-                .All(typeof(PhysicsComponent)))
+        public PhysicsSystem(TiledMap tiledMap)
+            : base(Aspect.All(typeof(PhysicsComponent)))
         {
             //_tiledMap = tiledMap;
             _colliders = new Bag<PhysicsComponent>();
@@ -46,94 +44,95 @@ namespace Retroherz.Systems
 
         public override void Initialize(IComponentMapperService mapperService)
         {
-            _colliderCompomentMapper = mapperService.GetMapper<ColliderComponent>();
             _physicsComponentMapper = mapperService.GetMapper<PhysicsComponent>();
         }
 
-        public override void Process(GameTime gameTime, int entityId)
+        public override void Update(GameTime gameTime)
         {
             var deltaTime = gameTime.GetElapsedSeconds();
 
-            //var collider = _colliderCompomentMapper.Get(entityId);
-            var physics = _physicsComponentMapper.Get(entityId);
-      
-            // Curret location on grid
-            var location = Vector2.Floor(physics.Position / new Vector2(
-                _tiledMap.TileWidth,
-                _tiledMap.TileHeight));
-
-            // Restrict movement to world grid
-            if (physics.Position.X < 0)
+            foreach (var entityId in ActiveEntities)
             {
-                physics.Position = physics.Position.SetX(0);
-                physics.Velocity = physics.Velocity.SetX(0);
-            }
-            else if (physics.Position.X > _tiledMap.WidthInPixels - physics.Size.X)
-            {
-                physics.Position = physics.Position.SetX(_tiledMap.WidthInPixels - physics.Size.X);
-                physics.Velocity = physics.Velocity.SetX(0);
-            }
-            else if (physics.Position.Y < 0)
-            {
-                physics.Position = physics.Position.SetY(0);
-                physics.Velocity = physics.Velocity.SetY(0);
-            }
-            else if (physics.Position.Y > _tiledMap.HeightInPixels - physics.Size.Y)
-            {
-                physics.Position = physics.Position.SetY(_tiledMap.HeightInPixels - physics.Size.Y);
-                physics.Velocity = physics.Velocity.SetY(0);
-            }
+                var physics = _physicsComponentMapper.Get(entityId);
+        
+                // Curret location on grid
+                var location = Vector2.Floor(physics.Position / new Vector2(
+                    _tiledMap.TileWidth,
+                    _tiledMap.TileHeight));
 
-            // Get a subset of colliders
-            EvaluateColliders(physics, deltaTime);
-
-            // Sort collision in order of distance
-            var contactPoint = new Vector2();
-            var contactNormal = new Vector2();
-            var contactTime = new float();
-            var colliders = new List<Tuple<PhysicsComponent, float>>(_colliders.Count);
-
-            // Work out collision point ...
-            physics.ContactInfo.Clear();
-            foreach (var collider in _colliders)
-            { 
-                if (Collides(
-                    ref physics,
-                    collider,
-                    ref contactPoint,
-                    ref contactNormal,
-                    ref contactTime,
-                    deltaTime))
-                    {
-                        // ... add it to vector along with rectangle ID
-                        colliders.Add(new Tuple<PhysicsComponent, float>(collider, contactTime));
-
-                        // ... and contact information for visuals etc.
-                        var contact = new PhysicsComponent(
-                            position: collider.Position,
-                            size: collider.Size);
-                        physics.ContactInfo.Add(new Tuple<PhysicsComponent, Vector2, Vector2, float>(
-                            contact, contactPoint, contactNormal, contactTime));
-                   }
-            }
-
-            if (colliders.Count > 0)
-            {
-                // Do the sort
-                colliders.Sort((a, b) => a.Item2 < b.Item2 ? -1 : 1);
-
-                // Now resolve the collision in correct order
-                foreach (var collider in colliders)
+                // Restrict movement to world grid
+                if (physics.Position.X < 0)
                 {
-                    if(ResolveCollision(physics, collider.Item1, deltaTime))
-                        hub.Publish<TiledMapSystemEvent>(new TiledMapSystemEvent(
-                            TiledMapSystemAction.RemoveTile,
-                            collider.Item1.Position));
+                    physics.Position = physics.Position.SetX(0);
+                    physics.Velocity = physics.Velocity.SetX(0);
                 }
-            }
+                else if (physics.Position.X > _tiledMap.WidthInPixels - physics.Size.X)
+                {
+                    physics.Position = physics.Position.SetX(_tiledMap.WidthInPixels - physics.Size.X);
+                    physics.Velocity = physics.Velocity.SetX(0);
+                }
+                else if (physics.Position.Y < 0)
+                {
+                    physics.Position = physics.Position.SetY(0);
+                    physics.Velocity = physics.Velocity.SetY(0);
+                }
+                else if (physics.Position.Y > _tiledMap.HeightInPixels - physics.Size.Y)
+                {
+                    physics.Position = physics.Position.SetY(_tiledMap.HeightInPixels - physics.Size.Y);
+                    physics.Velocity = physics.Velocity.SetY(0);
+                }
 
-            // Update position
-            physics.Position += physics.Velocity * deltaTime;
+                // Get a subset of colliders
+                EvaluateColliders(physics, deltaTime);
+
+                // Sort collision in order of distance
+                var contactPoint = new Vector2();
+                var contactNormal = new Vector2();
+                var contactTime = new float();
+                var colliders = new List<Tuple<PhysicsComponent, float>>(_colliders.Count);
+
+                // Work out collision point ...
+                physics.ContactInfo.Clear();
+                foreach (var collider in _colliders)
+                { 
+                    if (Collides(
+                        ref physics,
+                        collider,
+                        ref contactPoint,
+                        ref contactNormal,
+                        ref contactTime,
+                        deltaTime))
+                        {
+                            // ... add it to vector along with rectangle ID
+                            colliders.Add(new Tuple<PhysicsComponent, float>(collider, contactTime));
+
+                            // ... and contact information for visuals etc.
+                            var contact = new PhysicsComponent(
+                                position: collider.Position,
+                                size: collider.Size);
+                            physics.ContactInfo.Add(new Tuple<PhysicsComponent, Vector2, Vector2, float>(
+                                contact, contactPoint, contactNormal, contactTime));
+                    }
+                }
+
+                if (colliders.Count > 0)
+                {
+                    // Do the sort
+                    colliders.Sort((a, b) => a.Item2 < b.Item2 ? -1 : 1);
+
+                    // Now resolve the collision in correct order
+                    foreach (var collider in colliders)
+                    {
+                        if(ResolveCollision(physics, collider.Item1, deltaTime));
+                            /*hub.Publish<TiledMapSystemEvent>(new TiledMapSystemEvent(
+                                TiledMapSystemAction.RemoveTile,
+                                collider.Item1.Position));*/
+                    }
+                }
+
+                // Update position
+                physics.Position += physics.Velocity * deltaTime;
+            }
         }
 
         private void EvaluateColliders(PhysicsComponent physics, float deltaTime)
@@ -165,7 +164,7 @@ namespace Retroherz.Systems
                 var position = new Vector2(tile.X * _tiledMap.TileWidth, tile.Y * _tiledMap.TileHeight);
                 var size = new Vector2(_tiledMap.TileWidth, _tiledMap.TileHeight);
                 var candidate = new RectangleF(position, size);
-                var wall = new PhysicsComponent(position: position, size: size, type: PhysicsComponentType.Static);
+                var wall = new PhysicsComponent(position: position, size: size, type: ColliderComponentType.Static);
 
                 if(inflated.Intersects(candidate))
                     _colliders.Add(wall);
@@ -176,7 +175,7 @@ namespace Retroherz.Systems
             {
                 var entity = _physicsComponentMapper.Get(entityId);
                 var candidate = new RectangleF(Vector2.Round(entity.Position), entity.Size);
-                entity.Type = PhysicsComponentType.Dynamic;
+                entity.Type = ColliderComponentType.Dynamic;
 
                 // Ignore self (does it do anything?)
                 if(!physics.Equals(entity) && inflated.Intersects(candidate))
@@ -189,7 +188,7 @@ namespace Retroherz.Systems
         // Courtesy of One Lone Coder
         // https://github.com/OneLoneCoder/olcPixelGameEngine/blob/master/Videos/OneLoneCoder_PGE_Rectangles.cpp
         
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        //[MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void Swap<T>(ref T a, ref T b) => (a, b) = (b, a);
 
         private bool Intersects(
@@ -203,6 +202,7 @@ namespace Retroherz.Systems
             contactPoint = Vector2.Zero;
             contactNormal = Vector2.Zero;
 
+            // Negative quadrant?
             var outOfBounds = target.Position.X < 0 || target.Position.Y < 0;
 
             // To not confuse the algorithm we shift target position and ray origin
@@ -237,6 +237,7 @@ namespace Retroherz.Systems
             // For a correct calculation of contact point we shift ray origin back
             // - VE
             if (outOfBounds) rayOrigin -= target.Size;
+            if (timeHitNear < 0) timeHitNear = 0;
 
             // Furthest 'time' is contact on opposite side of target
             var timeHitFar = MathF.Min(targetFar.X, targetFar.Y);
@@ -324,11 +325,12 @@ namespace Retroherz.Systems
                 collider.Contact[2] = contactNormal.Y < 0 ? obstacle : null;
                 collider.Contact[3] = contactNormal.X > 0 ? obstacle : null;
 
-
                 // Displace
                 collider.Velocity += contactNormal * new Vector2(
                     MathF.Abs(collider.Velocity.X),
                     MathF.Abs(collider.Velocity.Y)) * (1 - contactTime);
+
+                System.Console.WriteLine("{0}, {1}, {2}", contactTime, contactPoint, contactNormal);
 
                 return true;
             }

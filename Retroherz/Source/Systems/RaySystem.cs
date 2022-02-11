@@ -37,7 +37,7 @@ namespace Retroherz.Systems
 
         public override void Process(GameTime gameTime, int entityId)
         {
-            var deltaTime = gameTime.GetElapsedSeconds();
+            /*var deltaTime = gameTime.GetElapsedSeconds();
             var mouseState = Mouse.GetState();
             var physics = _physicsComponentMapper.Get(entityId);
             var ray = _physicsComponentMapper.Get(entityId);
@@ -111,7 +111,7 @@ namespace Retroherz.Systems
             // Test tile at new test point
             //if (mapCheck.X >= 0 && mapCheck.X < tiledMapSyste)
         }
-/*
+
 			// Test tile at new test point
 			if (vMapCheck.x >= 0 && vMapCheck.x < vMapSize.x && vMapCheck.y >= 0 && vMapCheck.y < vMapSize.y)
 			{

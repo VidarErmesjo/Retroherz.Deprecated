@@ -121,9 +121,7 @@ namespace Retroherz.Systems
             foreach (var tile in _tiles) if (tile.Value.Type == TiledMapType.Solid)
                 System.Console.WriteLine("{0}, {1}, {2}, {3}", tile.Key, tile.Value.X, tile.Value.Y, tile.Value.Type);
 
-            //_tiledMapRenderer.LoadMap(_tiledMapComponentMapper.t().TiledMap);
-            //var payload = new TiledMapSystemEvent(TiledMapSystemAction.GetTiles);
-            //hub.Publish<TiledMapSystemEvent>(payload);
+
             hub.Publish(new GetTiledMap(_tiledMap));
         }
 
@@ -136,12 +134,12 @@ namespace Retroherz.Systems
         {
             _tiledMapRenderer.Draw(_camera.GetViewMatrix());
 
-            var factor = 1.1f;
+            /*var factor = 1.1f;
             var scaled = new OrthographicCamera(_spriteBatch.GraphicsDevice);
             scaled.Position = _camera.Position;
             //scaled.LookAt(_camera.Position);
             scaled.ZoomIn(16);
-            _tiledMapRenderer.Draw(scaled.GetViewMatrix());
+            _tiledMapRenderer.Draw(scaled.GetViewMatrix());*/
             
         }
 

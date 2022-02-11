@@ -5,40 +5,18 @@ using MonoGame.Extended.Collections;
 
 namespace Retroherz.Components
 {
-    public enum PhysicsComponentType
-    {
-        Static,
-        Dynamic
-    }
-
-    public enum ResolveCollision
-    {
-        Stop,
-        Slide,
-        Bounce
-    }
-
-    public enum Side
-    {
-        North,
-        East,
-        South,
-        West
-    }
-
     // ActorComponent?
     public class PhysicsComponent
     {
         public Vector2 Position { get; set; }
         public Vector2 Velocity { get; set; }
-        public Vector2 Direction { get; set; }
 
         //public BoundingRectangle Size { get; set; }
         public Vector2 Size { get; set; }
         public Vector2 Origin { get; set; }
         public PhysicsComponent[] Contact = new PhysicsComponent[4];
 
-        public PhysicsComponentType Type { get; set; }
+        public ColliderComponentType Type { get; set; }
 
         // EXP
         public Bag<Tuple<PhysicsComponent, Vector2, Vector2, float>> ContactInfo;
@@ -49,7 +27,6 @@ namespace Retroherz.Components
         {
             Position = physicsComponent.Position;
             Velocity = physicsComponent.Velocity;
-            Direction = physicsComponent.Direction;
             Size = physicsComponent.Size;
             Origin = physicsComponent.Origin;
             Contact = physicsComponent.Contact;
@@ -62,11 +39,10 @@ namespace Retroherz.Components
             Vector2 velocity = default(Vector2),
             Vector2 direction = default(Vector2),
             Vector2 size = default(Vector2),
-            PhysicsComponentType type = default(PhysicsComponentType))
+            ColliderComponentType type = default(ColliderComponentType))
         {
             Position = position;
             Velocity = velocity;
-            Direction = direction;
             Size = size;
             Origin = size / 2;
 
