@@ -41,6 +41,7 @@ namespace Retroherz.Components
         public Nullable<(ColliderComponent, TransformComponent)>[] Contact;
 
         public IShapeF Bounds { get; }
+        public Vector2 PenetrationVector { get; set; }
 
         // EXP
         public Bag<((ColliderComponent collider, TransformComponent tranform), Vector2 contactPoint, Vector2 contactNormal, float contactTime)> ContactInfo;
@@ -71,6 +72,8 @@ namespace Retroherz.Components
             ContactInfo = new Bag<((ColliderComponent, TransformComponent), Vector2, Vector2, float)>();
 
             Type = type;
+
+            PenetrationVector = Vector2.Zero;
         }
 
         /*public ColliderComponent(

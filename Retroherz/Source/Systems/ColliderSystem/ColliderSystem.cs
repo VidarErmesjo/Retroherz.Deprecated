@@ -21,7 +21,7 @@ namespace Retroherz.Systems
 
     }
 
-    public class ColliderSystem : EntityProcessingSystem
+    public class ColliderSystem : EntityUpdateSystem
     {
         Hub hub = Hub.Default;
 
@@ -35,11 +35,10 @@ namespace Retroherz.Systems
 
         internal float deltaTime;
         internal RectangleF inflated;
+        internal int sourceId;
         internal Vector2 location;
         internal Vector2 inverseTileSize;
-        internal ColliderComponent collider;
-        internal TransformComponent transform;
-
+        internal IEnumerable<TiledMapTile> tiles;
 
         public ColliderSystem(TiledMap tiledMap, OrthographicCamera camera)
             : base(Aspect.All(typeof(ColliderComponent), typeof(TransformComponent)))
@@ -67,101 +66,116 @@ namespace Retroherz.Systems
             _transformComponentMapper = mapperService.GetMapper<TransformComponent>();
         }
 
-        public override void Process(GameTime gameTime, int entityId)
+        public override void Update(GameTime gameTime)
         {
             deltaTime = gameTime.GetElapsedSeconds();
 
-            collider = _colliderComponentMapper.Get(entityId);
-            transform = _transformComponentMapper.Get(entityId);
+            // Filter
+            var topLeft = _camera.BoundingRectangle.TopLeft * inverseTileSize;
+            var bottomRight = _camera.BoundingRectangle.BottomRight * inverseTileSize;
 
-            // Cache division
-            inverseTileSize = Vector2.One / new Vector2(
-                _tiledMap.TileWidth,
-                _tiledMap.TileHeight);
-    
-            // Curret location on grid
-            location = Vector2.Floor(transform.Position * inverseTileSize);
+            tiles = _tiledMap.TileLayers[0].Tiles.Where(tile => (
+                !tile.IsBlank
+                // Filters for camera viewport, but tiles will not exist for other entities!
+                //&& (tile.X > topLeft.X && tile.X < bottomRight.X)
+                //&& (tile.Y > topLeft.Y && tile.Y < bottomRight.Y)
+            ));
 
-            // Restrict movement to world grid
-            if (transform.Position.X < 0)
+            foreach (var entityId in ActiveEntities)
             {
-                transform.Position = transform.Position.SetX(0);
-                collider.Velocity = collider.Velocity.SetX(0);
-            }
-            else if (transform.Position.X > _tiledMap.WidthInPixels - collider.Size.X)
-            {
-                transform.Position = transform.Position.SetX(_tiledMap.WidthInPixels - collider.Size.X);
-                collider.Velocity = collider.Velocity.SetX(0);
-            }
-            else if (transform.Position.Y < 0)
-            {
-                transform.Position = transform.Position.SetY(0);
-                collider.Velocity = collider.Velocity.SetY(0);
-            }
-            else if (transform.Position.Y > _tiledMap.HeightInPixels - collider.Size.Y)
-            {
-                transform.Position = transform.Position.SetY(_tiledMap.HeightInPixels - collider.Size.Y);
-                collider.Velocity = collider.Velocity.SetY(0);
-            }
+                sourceId = entityId;
+                var collider = _colliderComponentMapper.Get(entityId);
+                var transform = _transformComponentMapper.Get(entityId);
 
-            // All dynamic colliders should be rounded to nearest integer to help with
-            // moving through tight passages etc.
-            // Tiles are static and can be ignored in this regard.
+                // Cache division
+                inverseTileSize = Vector2.One / new Vector2(
+                    _tiledMap.TileWidth,
+                    _tiledMap.TileHeight);
+        
+                // Curret location on grid
+                location = Vector2.Floor(transform.Position * inverseTileSize);
 
-            // Bounding rectangle
-            var bounds = new RectangleF(Vector2.Round(transform.Position), collider.Size);
+                // Restrict movement to map grid
+                if (transform.Position.X < 0)
+                {
+                    transform.Position = transform.Position.SetX(0);
+                    collider.Velocity = collider.Velocity.SetX(0);
+                }
+                else if (transform.Position.X > _tiledMap.WidthInPixels - collider.Size.X)
+                {
+                    transform.Position = transform.Position.SetX(_tiledMap.WidthInPixels - collider.Size.X);
+                    collider.Velocity = collider.Velocity.SetX(0);
+                }
+                else if (transform.Position.Y < 0)
+                {
+                    transform.Position = transform.Position.SetY(0);
+                    collider.Velocity = collider.Velocity.SetY(0);
+                }
+                else if (transform.Position.Y > _tiledMap.HeightInPixels - collider.Size.Y)
+                {
+                    transform.Position = transform.Position.SetY(_tiledMap.HeightInPixels - collider.Size.Y);
+                    collider.Velocity = collider.Velocity.SetY(0);
+                }
 
-            // Pilot rectangle
-            var pilot = new RectangleF(transform.Position + collider.Velocity * deltaTime, collider.Size);
+                // All dynamic colliders should be rounded to nearest integer to help with
+                // moving through tight passages etc.
+                // Tiles are static and can be ignored in this regard.
 
-            // Inflated rectangle (search area)
-            var minimum = Vector2.Min(bounds.TopLeft, pilot.TopLeft);
-            var maximum = Vector2.Max(bounds.BottomRight, pilot.BottomRight);
-            inflated = new RectangleF(minimum, maximum - minimum);
+                // Bounding rectangle
+                var bounds = new RectangleF(Vector2.Round(transform.Position), collider.Size);
 
-            // Clear and add colliders
-            _candidates.Clear();
-            AddStaticColliders();
-            AddDynamicColliders();
+                // Pilot rectangle
+                var pilot = new RectangleF(transform.Position + collider.Velocity * deltaTime, collider.Size);
 
-            // Sort collision in order of distance
-            var contactPoint = new Vector2();
-            var contactNormal = new Vector2();
-            var contactTime = new float();
+                // Inflated rectangle (search area)
+                var minimum = Vector2.Min(bounds.TopLeft, pilot.TopLeft);
+                var maximum = Vector2.Max(bounds.BottomRight, pilot.BottomRight);
+                inflated = new RectangleF(minimum, maximum - minimum);
 
-            // Work out collision point ...
-            collider.ContactInfo.Clear();
-            _collisions.Clear();
-            foreach (var candidate in _candidates)
-            { 
-                if (Collides(
-                    (collider, transform),
-                    candidate,
-                    out contactPoint,
-                    out contactNormal,
-                    out contactTime,
-                    deltaTime))                        {
+                // Clear and add colliders
+                _candidates.Clear();
+                AddStaticColliders();
+                AddDynamicColliders();
 
+                // Sort collision in order of distance
+                var contactPoint = Vector2.Zero;
+                var contactNormal = Vector2.Zero;
+                var contactTime = 0.0f;
+
+                // Work out collision point ...
+                collider.ContactInfo.Clear();
+                _collisions.Clear();
+                foreach (var candidate in _candidates)
+                { 
+                    if (Collides(
+                        (collider, transform),
+                        candidate,
+                        out contactPoint,
+                        out contactNormal,
+                        out contactTime,
+                        deltaTime))
+                    {
                         // ... add it to vector along with rectangle ID
                         _collisions.Add(((candidate, contactPoint, contactNormal, contactTime)));
 
                         // ... and contact information for visuals etc.
                         collider.ContactInfo.Add((candidate, contactPoint, contactNormal, contactTime));
+                    }
                 }
-            }
 
-            if (_collisions.Count > 0)
-            {
-                // Do the sort
-                _collisions.Sort((a, b) => a.contactTime < b.contactTime ? -1 : 1);
-
-                // Now resolve the collision in correct order
-                foreach (var collision in _collisions)
+                if (_collisions.Count > 0)
                 {
-                    if(ResolveCollision((collider, transform), collision.target, deltaTime));
-                        /*hub.Publish<TiledMapSystemEvent>(new TiledMapSystemEvent(
-                            TiledMapSystemAction.RemoveTile,
-                            collider.Item1.Position));*/
+                    // Do the sort
+                    _collisions.Sort((a, b) => a.contactTime < b.contactTime ? -1 : 1);
+
+                    // Now resolve the collision in correct order
+                    foreach (var collision in _collisions)
+                    {
+                        if(ResolveCollision((collider, transform), collision.target, deltaTime));
+                            /*hub.Publish<TiledMapSystemEvent>(new TiledMapSystemEvent(
+                                TiledMapSystemAction.RemoveTile,
+                                collider.Item1.Position));*/
+                    }
                 }
             }
         }
@@ -203,20 +217,8 @@ namespace Retroherz.Systems
                 }
             System.Console.WriteLine("{0}, {1}, {2}, {3}, {4}", count, X, rangeX, Y, rangeY);*/
 
-            // Filter
-            var topLeft = _camera.BoundingRectangle.TopLeft * inverseTileSize;
-            var bottomRight = _camera.BoundingRectangle.BottomRight * inverseTileSize;
-
-            var tiles = _tiledMap.TileLayers[0].Tiles.Where(tile => (
-                !tile.IsBlank
-                && (tile.X > topLeft.X && tile.X < bottomRight.X)
-                && (tile.Y > topLeft.Y && tile.Y < bottomRight.Y)
-            ));
-
-            // Evaluated
             foreach (var tile in tiles)
             {
-
                 var position = new Vector2(tile.X * _tiledMap.TileWidth, tile.Y * _tiledMap.TileHeight);
                 var size = new Vector2(_tiledMap.TileWidth, _tiledMap.TileHeight);
                 var candidate = new RectangleF(position, size);
@@ -230,17 +232,22 @@ namespace Retroherz.Systems
 
         internal void AddDynamicColliders()
         {
-            foreach (var entityId in ActiveEntities)
-            {
-                var otherCollider = _colliderComponentMapper.Get(entityId);
-                var otherTransform = _transformComponentMapper.Get(entityId);
-                // Round?
-                var candidate = new RectangleF(otherTransform.Position, otherCollider.Size);
-                otherCollider.Type = ColliderComponentType.Dynamic;
+            var topLeft = _camera.BoundingRectangle.TopLeft;
+            var bottomRight = _camera.BoundingRectangle.BottomRight;
 
-                // Ignore self (does it do anything?)
-                if(!transform.Equals(otherTransform) && inflated.Intersects(candidate))
-                    _candidates.Add((otherCollider, otherTransform));
+            foreach (var targetId in ActiveEntities)
+            {
+                var collider = _colliderComponentMapper.Get(targetId);
+                var transform = _transformComponentMapper.Get(targetId);
+
+                // Conditionals
+                var windowX = transform.Position.X > topLeft.X - collider.Size.X && transform.Position.X < bottomRight.X;
+                var windowY = transform.Position.Y > topLeft.Y - collider.Size.Y && transform.Position.Y < bottomRight.Y;
+
+                // Add if within view
+                if (inflated.Intersects(new RectangleF(transform.Position, collider.Size)) && targetId != sourceId)
+                //if (windowX && windowY && entityId != test)
+                    _candidates.Add((collider, transform));
             }
         }
 
@@ -266,7 +273,6 @@ namespace Retroherz.Systems
 
             // Are we in the correct quadrant?
             var outOfBounds = target.transform.Position.X < 0 || target.transform.Position.Y < 0;
-            //outOfBounds = false;
 
             // To not confuse the algorithm we shift target position and ray origin
             // to force upcomming calculations over to the positiv axes.
@@ -300,9 +306,6 @@ namespace Retroherz.Systems
             // For a correct calculation of contact point we shift ray origin back
             // - VE
             if (outOfBounds) rayOrigin -= target.collider.Size;
-
-            // EXP
-            //if (timeHitNear < 0) timeHitNear = 0;
 
             // Furthest 'time' is contact on opposite side of target
             var timeHitFar = MathF.Min(targetFar.X, targetFar.Y);
@@ -355,7 +358,7 @@ namespace Retroherz.Systems
             if (source.collider.Velocity == Vector2.Zero) return false;
             
             // Expand target collider box by source dimensions
-            (ColliderComponent collider, TransformComponent transform) inflated = (
+            (ColliderComponent collider, TransformComponent transform) inflatedTarget = (
                 new ColliderComponent(
                     size: target.collider.Size + source.collider.Size,
                     velocity: target.collider.Velocity,
@@ -363,9 +366,45 @@ namespace Retroherz.Systems
                 new TransformComponent(position: target.transform.Position - source.collider.Origin));
 
             // EXP
-            //if (inflated.collider.Type == ColliderComponentType.Dynamic)
-                //inflated.transform.Position += inflated.collider.Velocity * deltaTime;
-                //System.Console.WriteLine(inflated.transform.Position + inflated.collider.Velocity * deltaTime);
+            if (target.collider.Type == ColliderComponentType.Dynamic)
+            {
+                // ???
+                var sourceRectangle = new RectangleF(source.transform.Position + source.collider.Velocity * deltaTime, source.collider.Size);
+                var targetRectangle = new RectangleF(target.transform.Position + target.collider.Velocity * deltaTime, target.collider.Size);
+
+                var intersectingRectangle = sourceRectangle.Intersection(targetRectangle);
+
+                // Early rejection
+                if (intersectingRectangle.IsEmpty) return false;
+
+                Vector2 penetration;
+                if (intersectingRectangle.Width < intersectingRectangle.Height)
+                {
+                    var displacement = sourceRectangle.Center.X < targetRectangle.Center.X
+                        ? intersectingRectangle.Width
+                        : -intersectingRectangle.Width;
+                    penetration = new Vector2(displacement, 0);
+                }
+                else
+                {
+                    var displacement = sourceRectangle.Center.Y < targetRectangle.Center.Y
+                        ? intersectingRectangle.Height
+                        : -intersectingRectangle.Height;
+                    penetration = new Vector2(0, displacement);
+                }
+
+                contactNormal = -penetration.NormalizedCopy();
+                if (float.IsNaN(contactNormal.X) || float.IsNaN(contactNormal.Y)) contactNormal = Vector2.Zero;
+
+                contactPoint = source.transform.Position + source.collider.Origin;
+                contactTime = (penetration / target.collider.Size).Length();
+
+                // FUN
+                //target.collider.Velocity += -contactNormal * new Vector2(MathF.Abs(source.collider.Velocity.X), MathF.Abs(source.collider.Velocity.Y) * contactTime);
+                //source.collider.Velocity += contactNormal * new Vector2(MathF.Abs(target.collider.Velocity.X), MathF.Abs(target.collider.Velocity.Y) * contactTime);
+
+                return (contactNormal != Vector2.Zero) ? true : false;
+            }
 
             // Calculate ray vectors
             var rayOrigin = source.transform.Position + source.collider.Origin;
@@ -375,7 +414,7 @@ namespace Retroherz.Systems
             if (Intersects(
                 rayOrigin,
                 rayDirection,
-                inflated,
+                inflatedTarget,
                 out contactPoint,
                 out contactNormal,
                 out contactTime))
@@ -401,6 +440,17 @@ namespace Retroherz.Systems
                 out contactTime,
                 deltaTime))
             {
+                /*if (target.collider.Type == ColliderComponentType.Dynamic)
+                {
+                    target.collider.Velocity = -contactNormal * new Vector2(
+                    MathF.Abs(source.collider.Velocity.X),
+                    MathF.Abs(source.collider.Velocity.Y));// * (1 - contactTime));
+
+                    source.collider.Velocity = -contactNormal * new Vector2(
+                    MathF.Abs(target.collider.Velocity.X),
+                    MathF.Abs(target.collider.Velocity.Y));// * (1 - contactTime));
+                }*/
+
                 // Add contact normal information
                 source.collider.Contact[0] = contactNormal.Y > 0 ? target : null;
                 source.collider.Contact[1] = contactNormal.X < 0 ? target : null;

@@ -36,17 +36,18 @@ namespace Retroherz.Systems
             var sprite = _spriteComponentMapper.Get(entityId);
             var transform = _transformComponentMapper.Get(entityId);
 
-            /*if (collider != null)
+            if (collider != null)
             {
-                var sum = Vector2.Zero;
+                /*var sum = Vector2.Zero;
                 foreach (var e in collider.PenetrationVectors)
                 {
                     sum += e / collider.PenetrationVectors.Count;
                 }
                 collider.Bounds.Position -= sum;
-                //System.Console.WriteLine("Sum: " + sum);
-                transform.Position = collider.Bounds.Position;
-            }*/
+                //System.Console.WriteLine("Sum: " + sum);*/
+                //transform.Position -= collider.PenetrationVector; //collider.Bounds.Position;
+                //collider.PenetrationVector = Vector2.Zero;
+            }
 
             // Update position
             transform.Position += collider.Velocity * gameTime.GetElapsedSeconds();

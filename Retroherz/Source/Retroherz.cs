@@ -160,7 +160,6 @@ namespace Retroherz
 
         protected override void Draw(GameTime gameTime)
         {
-            var scale = 1f / (GameManager.VirtualResolution.Height / GameManager.GraphicsDeviceManager.GraphicsDevice.Viewport.Height);
             //GameManager.GraphicsDeviceManager.GraphicsDevice.SetRenderTarget((GameManager.LowResolution ? GameManager.VirtualRenderTarget : GameManager.DeviceRenderTarget));
             GameManager.GraphicsDeviceManager.GraphicsDevice.SetRenderTarget(GameManager.VirtualRenderTarget);
             GameManager.GraphicsDeviceManager.GraphicsDevice.Clear(Color.Transparent);
