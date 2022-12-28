@@ -81,19 +81,22 @@ namespace Retroherz.Systems
                 //&& (tile.Y > topLeft.Y && tile.Y < bottomRight.Y)
             ));
 
+			// Cache division
+			inverseTileSize = Vector2.One / new Vector2(
+				_tiledMap.TileWidth,
+				_tiledMap.TileHeight);
+
             foreach (var entityId in ActiveEntities)
             {
                 sourceId = entityId;
                 var collider = _colliderComponentMapper.Get(entityId);
                 var transform = _transformComponentMapper.Get(entityId);
-
-                // Cache division
-                inverseTileSize = Vector2.One / new Vector2(
-                    _tiledMap.TileWidth,
-                    _tiledMap.TileHeight);
         
                 // Curret location on grid
                 location = Vector2.Floor(transform.Position * inverseTileSize);
+
+				//var tiledMapMaxWidth = _tiledMap.WidthInPixels - collider.Size.X;
+				//var tiledMapMaxHeight = _tiledMap.HeightInPixels - collider.Size.Y;
 
                 // Restrict movement to map grid
                 if (transform.Position.X < 0)
@@ -158,7 +161,7 @@ namespace Retroherz.Systems
                         // ... add it to vector along with rectangle ID
                         _collisions.Add(((candidate, contactPoint, contactNormal, contactTime)));
 
-                        // ... and contact information for visuals etc.
+                        // ... and contact information for effects, visuals etc.
                         collider.ContactInfo.Add((candidate, contactPoint, contactNormal, contactTime));
                     }
                 }
@@ -171,7 +174,7 @@ namespace Retroherz.Systems
                     // Now resolve the collision in correct order
                     foreach (var collision in _collisions)
                     {
-                        if(ResolveCollision((collider, transform), collision.target, deltaTime));
+                        if(ResolveCollision((collider, transform), collision.target, deltaTime)) {}
                             /*hub.Publish<TiledMapSystemEvent>(new TiledMapSystemEvent(
                                 TiledMapSystemAction.RemoveTile,
                                 collider.Item1.Position));*/
@@ -271,11 +274,11 @@ namespace Retroherz.Systems
             contactNormal = Vector2.Zero;
             timeHitNear = 0.0f;
 
-            // Are we in the correct quadrant?
+            // Are we in the correct (South-East) quadrant?
             var outOfBounds = target.transform.Position.X < 0 || target.transform.Position.Y < 0;
 
             // To not confuse the algorithm we shift target position and ray origin
-            // to force upcomming calculations over to the positiv axes.
+            // to force upcomming calculations over to the positive axes.
             // - VE
             if (outOfBounds)
             {
@@ -323,21 +326,10 @@ namespace Retroherz.Systems
                 // Note if targetNear == targetFar, collision is principly in a diagonal
                 // so pointless to resolve. By returning a CN={0,0} even though its
                 // considered a hit, the resolver wont change anything.
-
             else
-                // Set (proper) contacts for diagonal collisions
+                // Diagonal case will be resolved in collision resolver. Thus we return CN={0,0}.
                 // - VE
-                if (inverseDirection.X < 0 && inverseDirection.Y > 0) contactNormal = new Vector2(1, -1);
-                else if (inverseDirection.X < 0 && inverseDirection.Y < 0) contactNormal = new Vector2(1, 1);
-                else if (inverseDirection.X > 0 && inverseDirection.Y > 0) contactNormal = new Vector2(-1, -1);
-                else if (inverseDirection.X > 0 && inverseDirection.Y < 0) contactNormal = new Vector2(-1, 1);
-                
-            // Resolve diagonal collision by reducing contact normal to one direction (seems to work nicely)
-            // - VE
-            if (contactNormal.X != 0 && contactNormal.Y != 0)
-                if (contactNormal.X > 0) contactNormal = contactNormal.SetY(0);
-                else if (contactNormal.Y > 0) contactNormal = contactNormal.SetX(0);
-                else contactNormal = Random.Shared.NextSingle() > 0.5f ? contactNormal.SetX(0) : contactNormal.SetY(0);
+				contactNormal = Vector2.Zero;
 
             return true;
         }
@@ -440,22 +432,18 @@ namespace Retroherz.Systems
                 out contactTime,
                 deltaTime))
             {
-                /*if (target.collider.Type == ColliderComponentType.Dynamic)
-                {
-                    target.collider.Velocity = -contactNormal * new Vector2(
-                    MathF.Abs(source.collider.Velocity.X),
-                    MathF.Abs(source.collider.Velocity.Y));// * (1 - contactTime));
+				// Resolve diagonal freak case (signel edges)
+				if (contactNormal == Vector2.Zero && source.collider.ContactInfo.Count == 1)
+				{
+					contactNormal = new Vector2(
+						Math.Clamp(-source.collider.Velocity.X, -1f, 1f),
+						Math.Clamp(-source.collider.Velocity.Y, -1f, 1f));
+					contactTime = 0.0f;
+				}
 
-                    source.collider.Velocity = -contactNormal * new Vector2(
-                    MathF.Abs(target.collider.Velocity.X),
-                    MathF.Abs(target.collider.Velocity.Y));// * (1 - contactTime));
-                }*/
-
-                // Add contact normal information
-                source.collider.Contact[0] = contactNormal.Y > 0 ? target : null;
-                source.collider.Contact[1] = contactNormal.X < 0 ? target : null;
-                source.collider.Contact[2] = contactNormal.Y < 0 ? target : null;
-                source.collider.Contact[3] = contactNormal.X > 0 ? target : null;
+				// Still a freak case on left "corridor". Not caught in this :(
+				if (contactNormal == Vector2.Zero)
+					System.Console.WriteLine("Diagonal! {0}", source.collider.ContactInfo.Count);
 
                 // Displace
                 source.collider.Velocity += contactNormal * new Vector2(

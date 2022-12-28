@@ -77,36 +77,34 @@ namespace Retroherz.Systems
                 _spriteBatch.DrawRectangle(inflated, Color.Yellow);
 
                 // Contac info
-                var union = new RectangleF(transform.Position, collider.Size);
                 foreach (var contact in collider.ContactInfo)
                 {
+					var origin = contact.contactPoint + collider.Velocity * deltaTime;
                     // Normals
-                    _spriteBatch.DrawPoint(contact.Item2, Color.BlueViolet, 4);
-                    _spriteBatch.DrawPoint(contact.Item2, Color.Red, 4);
-                    _spriteBatch.DrawLine(contact.Item2, contact.Item2 + contact.Item3 * 8, Color.Red);
+                    _spriteBatch.DrawPoint(origin, Color.BlueViolet, 4);
+                    _spriteBatch.DrawPoint(origin, Color.Red, 4);
+                    _spriteBatch.DrawLine(origin, origin + contact.contactNormal * 8, Color.Red);
 
                     // Rays
                     _spriteBatch.DrawLine(
-                        contact.Item2,
-                        contact.Item1.Item2.Position + contact.Item1.Item1.Origin,
+                        origin,
+                        contact.target.tranform.Position + contact.target.collider.Origin,
                         Color.BlueViolet);
 
                     // Inflated
                     _spriteBatch.DrawRectangle(
-                        contact.Item1.Item2.Position - collider.Origin,
-                        contact.Item1.Item1.Size + collider.Size,
+                        contact.target.tranform.Position - collider.Origin,
+                        contact.target.collider.Size + collider.Size,
                         Color.BlueViolet);
                     
                     // Contacts
                     _spriteBatch.FillRectangle(
-                        contact.Item1.Item2.Position,
-                        contact.Item1.Item1.Size,
+                        contact.target.tranform.Position,
+                        contact.target.collider.Size,
                         Color.Yellow);
 
-                    union = union.Union(new RectangleF(contact.Item1.Item2.Position, contact.Item1.Item1.Size));
                 }
                 collider.ContactInfo.Clear();
-                //_spriteBatch.DrawRectangle(union, Color.GreenYellow);
 
                 if (collider.Bounds != null)
                     if(collider.Type == ColliderComponentType.Border)
@@ -116,7 +114,7 @@ namespace Retroherz.Systems
 
 
                 // Embellish the "in contact" rectangles in yellow
-                for (int i = 0; i < 4; i++)
+                /*for (int i = 0; i < 4; i++)
                 {
                     if (collider.Contact[i] != null)
                         _spriteBatch.DrawPoint(
@@ -124,7 +122,7 @@ namespace Retroherz.Systems
                         Color.Red,
                         collider.Contact[i].Value.Item1.Size.Length());
                     collider.Contact[i] = null;
-                }
+                }*/
             }
 
             _spriteBatch.End();

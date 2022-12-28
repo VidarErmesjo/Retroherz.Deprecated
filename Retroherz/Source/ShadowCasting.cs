@@ -25,9 +25,9 @@ namespace MonoGame.ShadowCasting
 
     struct Cell
     {
-        int[] edgeId = new int[4];
-        bool[] edgeExists = new bool[4];
-        bool exists = false;
+        //int[] edgeId = new int[4];
+        //bool[] edgeExists = new bool[4];
+        //bool exists = false;
     }
 
     public static class ShadowCasting

@@ -44,7 +44,7 @@ namespace Retroherz.Components
         public Vector2 PenetrationVector { get; set; }
 
         // EXP
-        public Bag<((ColliderComponent collider, TransformComponent tranform), Vector2 contactPoint, Vector2 contactNormal, float contactTime)> ContactInfo;
+        public Bag<((ColliderComponent collider, TransformComponent tranform) target, Vector2 contactPoint, Vector2 contactNormal, float contactTime)> ContactInfo;
 
         public Bag<Vector2> PenetrationVectors;
 

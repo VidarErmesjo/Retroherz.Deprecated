@@ -86,7 +86,7 @@ namespace Retroherz
         public int CreateActor()
         {
             var position = Vector2.One * 16 * 2;
-            var size = new Size2(16f, 16f);
+            var size = new Size2(16, 16);
             var velocity = new Vector2(size.Width, size.Height * 0.75f);
             var rectangle = new RectangleF(position, size);
             var asepriteDocument = AssetsManager.Sprite("Shitsprite");
