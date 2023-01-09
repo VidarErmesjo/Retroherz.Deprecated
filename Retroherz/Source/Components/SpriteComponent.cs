@@ -21,6 +21,7 @@ namespace Retroherz.Components
             set => _animatedSprite.Position = value;
         }
 
+		// Needed?
         public Vector2 Origin
         {
             get => _animatedSprite.Origin;
@@ -30,9 +31,17 @@ namespace Retroherz.Components
         public Vector2 Scale
         {
             get => _animatedSprite.Scale;
-            set => _animatedSprite.Scale = new Vector2(
-                value.X / _animatedSprite.Width,
-                value.Y / _animatedSprite.Height);
+			set
+			{
+				if (_animatedSprite.Animating)
+					_animatedSprite.Scale = new Vector2(
+						value.X / _animatedSprite.Width,
+						value.Y / _animatedSprite.Height);
+				else
+					_animatedSprite.Scale = new Vector2(
+						value.X / _animatedSprite.Texture.Width,
+						value.Y / _animatedSprite.Texture.Height);
+			}
         }
 
         public float Rotation
@@ -41,19 +50,39 @@ namespace Retroherz.Components
             set => _animatedSprite.Rotation = value;
         }
 
-        public SpriteComponent(ref AsepriteDocument asepriteDocument)
+        public SpriteComponent(AsepriteDocument asepriteDocument)
         {
             _animatedSprite = new AnimatedSprite(asepriteDocument);
         }
 
-        ~SpriteComponent() {}
+		public SpriteComponent(Texture2D texture, Vector2 position = default(Vector2))
+		{
+			_animatedSprite = new AnimatedSprite(texture, position);
+		}
 
         public override void Update(GameTime gameTime) => _animatedSprite.Update(gameTime);
         
-        public void Draw(SpriteBatch spriteBatch) => _animatedSprite.Render(spriteBatch);
+        public void Draw(SpriteBatch spriteBatch)
+		{
+			if (_animatedSprite.Animating)
+				_animatedSprite.Render(spriteBatch);
+			else
+				spriteBatch.Draw(
+					texture: _animatedSprite.Texture,
+					position: this.Position,
+					sourceRectangle: null,
+					color: Color.White,
+					rotation: 0,
+					origin: this.Origin,
+					scale: this.Scale,
+					effects: SpriteEffects.None,
+					layerDepth: 0);
+		}
 
         public void Play(string animationName) => _animatedSprite.Play(animationName);
 
         public override string ToString() => _animatedSprite.ToString();
+
+		~SpriteComponent() {}
     }
 }

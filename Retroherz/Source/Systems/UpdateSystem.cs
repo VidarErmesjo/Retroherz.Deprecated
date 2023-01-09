@@ -11,15 +11,19 @@ using Retroherz.Components;
 
 namespace Retroherz.Systems
 {
-    public class UpdateSystem : EntityProcessingSystem
+	// Bad idea?
+    public class UpdateSystem : EntityUpdateSystem
     {
+		private readonly InputManager _inputManager;
         private ComponentMapper<ColliderComponent> _colliderComponentMapper;
         private ComponentMapper<SpriteComponent> _spriteComponentMapper;
         private ComponentMapper<TransformComponent> _transformComponentMapper;
 
-        public UpdateSystem()
-            : base(Aspect.All(typeof(ColliderComponent), typeof(TransformComponent)).One(typeof(SpriteComponent)))
-        {}
+        public UpdateSystem(InputManager inputManager)
+            : base(Aspect.All(typeof(ColliderComponent), typeof(SpriteComponent), typeof(TransformComponent)))
+        {
+			_inputManager = inputManager;
+		}
 
         ~UpdateSystem() {}
 
@@ -30,42 +34,26 @@ namespace Retroherz.Systems
             _transformComponentMapper = mapperService.GetMapper<TransformComponent>();
         }
 
-        public override void Process(GameTime gameTime, int entityId)
+        public override void Update(GameTime gameTime)
         {
-            var collider = _colliderComponentMapper.Get(entityId);
-            var sprite = _spriteComponentMapper.Get(entityId);
-            var transform = _transformComponentMapper.Get(entityId);
+			var deltaTime = gameTime.GetElapsedSeconds();
 
-            if (collider != null)
-            {
-                /*var sum = Vector2.Zero;
-                foreach (var e in collider.PenetrationVectors)
-                {
-                    sum += e / collider.PenetrationVectors.Count;
-                }
-                collider.Bounds.Position -= sum;
-                //System.Console.WriteLine("Sum: " + sum);*/
-                //transform.Position -= collider.PenetrationVector; //collider.Bounds.Position;
-                //collider.PenetrationVector = Vector2.Zero;
-            }
+			foreach (var entityId in ActiveEntities)
+			{
+				var collider = _colliderComponentMapper.Get(entityId);
+				var sprite = _spriteComponentMapper.Get(entityId);
+				var transform = _transformComponentMapper.Get(entityId);
 
-            // Update position
-            transform.Position += collider.Velocity * gameTime.GetElapsedSeconds();
+				// Update position
+				transform.Position += collider.Velocity * deltaTime;
 
-            // Update sprite
-            if (sprite != null)
-            {
-                //var scale = (RectangleF) collider.Bounds;
-                sprite.Scale = new Vector2(collider.Size.X, collider.Size.Y);
-                sprite.Position = transform.Position;
-                sprite.Update(gameTime);
-            }
+				//transform.Position += -collider.DeltaOrigin;
 
-            /*if (collider != null)
-            {
-                collider.Bounds.Position = transform.Position;
-                collider.PenetrationVectors.Clear();        
-            }*/
+				// Update sprite
+				sprite.Scale = collider.Size;
+				sprite.Position = transform.Position;
+				sprite.Update(gameTime);
+			}
         }
     }
 }

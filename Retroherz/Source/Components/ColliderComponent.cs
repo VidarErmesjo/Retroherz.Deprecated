@@ -1,153 +1,172 @@
 using System;
+using System.Linq;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGame.Extended.Collections;
-using MonoGame.Extended.Collisions;
 
-using Retroherz.Systems;
+using Retroherz.Math;
 
-namespace Retroherz.Components
+namespace Retroherz.Components;
+
+public enum ColliderComponentType
 {
-    public enum ColliderComponentType
-    {
-        Static,
-        Dynamic,
-        Border
-    }
+	Static,
+	Dynamic,
+	Border
+}
 
-    public enum ResolveCollision
-    {
-        Stop,
-        Slide,
-        Bounce
-    }
+public enum ResolveCollision
+{
+	Stop,
+	Slide,
+	Bounce
+}
 
-    public enum Side
-    {
-        North,
-        East,
-        South,
-        West
-    }
+public enum Direction
+{
+	Up = 0,
+	Right = 1,
+	Down = 2,
+	Left = 3
+}
 
-    // ActorComponent?
-    public class ColliderComponent : ICollisionActor
-    {
-        public Vector2 Velocity { get; set; }
-        public Vector2 Size { get; set; }
-        public Vector2 Origin { get; set; }
-        public ColliderComponentType Type { get; set; }
+public struct Ray
+{
+	public Vector Position;
+	public Vector Direction;
 
-        public Nullable<(ColliderComponent, TransformComponent)>[] Contact;
+	public Ray(Vector position, Vector direction) { Position = position; Direction = direction; }
 
-        public IShapeF Bounds { get; }
-        public Vector2 PenetrationVector { get; set; }
+	public override string ToString()  => "[" + $"Position:{Position} Direction:{Direction}" + "]";
+}
 
-        // EXP
-        public Bag<((ColliderComponent collider, TransformComponent tranform) target, Vector2 contactPoint, Vector2 contactNormal, float contactTime)> ContactInfo;
+public enum ContactType
+{
+	Collision,
+	Constraint
+}
 
-        public Bag<Vector2> PenetrationVectors;
+public struct Constraint
+{
+	public int Id;
+	public Vector ContactPoint;
+	public Vector ContactNormal;
+	public double ContactTime;
+	public (ColliderComponent collider, TransformComponent transform) Obstacle;
 
-        public ColliderComponent(ColliderComponent colliderComponent)
-        {
-            Velocity = colliderComponent.Velocity;
-            Size = colliderComponent.Size;
-            Origin = colliderComponent.Origin;
-            Contact = colliderComponent.Contact;
-            ContactInfo = colliderComponent.ContactInfo;
-            Type = colliderComponent.Type;
-        }
+	public Constraint(
+		int id,
+		(ColliderComponent, TransformComponent) obstacle,
+		Vector contactPoint,
+		Vector contactNormal,
+		double contactTime)
+	{
+		Id = id;
+		Obstacle = obstacle;
+		ContactPoint = contactPoint;
+		ContactNormal = contactNormal;
+		ContactTime = contactTime;
+	}
+}
 
-        public ColliderComponent(
-            Vector2 velocity = default(Vector2),
-            Vector2 size = default(Vector2),
-            ColliderComponentType type = default(ColliderComponentType))
-        {
-            Velocity = velocity;
-            Size = size;
-            Origin = size / 2;
+public struct Contact
+{
+	public int Id;
+	public Vector ContactPoint;
+	public Vector ContactNormal;
+	public double ContactTime;
 
-            Contact = new Nullable<(ColliderComponent, TransformComponent)>[4] { null, null , null, null };
+	public Contact(
+		int id,
+		Vector contactPoint,
+		Vector contactNormal,
+		double contactTime)
+	{
+		Id = id;
+		ContactPoint = contactPoint;
+		ContactNormal = contactNormal;
+		ContactTime = contactTime;
+	}
+}
 
-            ContactInfo = new Bag<((ColliderComponent, TransformComponent), Vector2, Vector2, float)>();
+// Arch
+// readonly?
+public struct Collider// : IScalable
+{
+	private readonly Dictionary<int, Contact> _contacts = new();
+	public Vector Velocity { get; set; }
+	public Vector Scale { get; set; }
+	public Vector Origin { get => Scale / 2; }
 
-            Type = type;
+	public void Add(int id, Contact contact) => _contacts.Add(id, contact);
+	public void Clear() => _contacts.Clear();
 
-            PenetrationVector = Vector2.Zero;
-        }
+	public Collider(Vector velocity, Vector scale) { Velocity = velocity; Scale = scale; }
 
-        /*public ColliderComponent(
-            IShapeF bounds,
-            Vector2 velocity = default(Vector2),
-            ColliderComponentType type = default(ColliderComponentType))
-        {
-            Bounds = bounds;
-            Velocity = velocity;
-            Type = type;
+	public override string ToString()  => "[" + $"Velocity:{Velocity} Scale:{Scale} Origin:{Origin}" + "]";
+}
 
-            var size = (RectangleF) bounds;
-            Size = new Vector2(size.Width, size.Height);
-            Origin = Size / 2;
+public class ColliderComponent
+{
+	private Vector _size = default(Vector);
+	private Vector _deltaSize = default(Vector);
 
-            Contact = new Nullable<(ColliderComponent, TransformComponent)>[4] { null, null , null, null };
-            ContactInfo = new Bag<((ColliderComponent, TransformComponent), Vector2, Vector2, float)>();
-            PenetrationVectors = new Bag<Vector2>(5);
+	//public readonly Dictionary<int, (Vector ContactPoint, Vector ContactNormal, float ContactTime)> Contacts = new();//_contacts = new();
+	public readonly Bag<Constraint> Constraints = new();
+	public readonly Bag<Contact> Contacts = new();//_contacts = new();
 
-        }*/
+	public (Vector Position, Vector Direction)[] Rays = new (Vector, Vector)[4];
 
-        public void OnCollision(CollisionEventArgs collisionEventArgs)
-        {
-            System.Console.WriteLine("{0} => {1}", Type, collisionEventArgs.PenetrationVector.NormalizedCopy());
-            var other = (ColliderComponent) collisionEventArgs.Other;
-            var transform = new TransformComponent(position: other.Bounds.Position);
+	public Vector Velocity { get; set; }
+	public Vector Size
+	{
+		get => _size;
+		set
+		{
+			_deltaSize = _size;
+			_size = Vector.Clamp(value, Vector.One, value);
+ 		}
+	}
 
-            switch (Type)
-            {
-                case ColliderComponentType.Static:
-                    break;
-                case ColliderComponentType.Dynamic:
-                    //Bounds.Position -= collisionEventArgs.PenetrationVector;
+	public Vector DeltaSize
+	{
+		get => _size - _deltaSize;
+		private set => _deltaSize = Vector2.Clamp(value, Vector.One, value);
+	}
 
-                    Contact[0] = collisionEventArgs.PenetrationVector.Y > 0 ? (other, transform) : null;
-                    Contact[1] = collisionEventArgs.PenetrationVector.X < 0 ? (other, transform) : null;
-                    Contact[2] = collisionEventArgs.PenetrationVector.Y < 0 ? (other, transform) : null;
-                    Contact[3] = collisionEventArgs.PenetrationVector.X > 0 ? (other, transform) : null;
-                    ContactInfo.Add(((other, transform), Vector2.Zero, Vector2.Zero, 0.0f));
-                    PenetrationVectors.Add(collisionEventArgs.PenetrationVector);
+	public Vector Origin { get => Size / 2; }
+	public Vector DeltaOrigin { get => DeltaSize / 2; }
 
-                    /*if(collisionEventArgs.PenetrationVector.X < 0 || collisionEventArgs.PenetrationVector.X > 0)
-                        Velocity = Velocity.SetX(0);
-                    if(collisionEventArgs.PenetrationVector.Y < 0 || collisionEventArgs.PenetrationVector.Y > 0)
-                        Velocity = Velocity.SetY(0);*/
+	public ColliderComponentType Type { get; set; }
 
-                    if (collisionEventArgs.PenetrationVector.X < 0)
-                        if (Velocity.X < 0) Velocity = Velocity.SetX(0);
-                    if (collisionEventArgs.PenetrationVector.X > 0)
-                        if (Velocity.X > 0) Velocity = Velocity.SetX(0);
-                    if (collisionEventArgs.PenetrationVector.Y < 0)
-                        if (Velocity.Y < 0) Velocity = Velocity.SetY(0);
-                    if (collisionEventArgs.PenetrationVector.Y > 0)
-                        if (Velocity.Y > 0) Velocity = Velocity.SetY(0);
+	//public void Add(int id, (Vector, Vector, float) contact) => _contacts.Add(id, contact);
+	//public void Clear() => _contacts.Clear();
+	//public bool Contains(int id) => _contacts.ContainsKey(id);
 
-                    if (other.Type == ColliderComponentType.Static);
-                        //System.Console.WriteLine("STATIC");
-                    else if (other.Type == ColliderComponentType.Dynamic)
-                    {
-                        //other.Velocity += collisionEventArgs.PenetrationVector * 32;
-                        other.Velocity *= -1;
-                        //System.Console.WriteLine("DYNAMIC");
-                    }
-                    else if (other.Type == ColliderComponentType.Border);
-                        //System.Console.WriteLine("BORDER");
+	/*public Span<(int ID, Vector ContactPoint, Vector ContactNormal, float ContactTime)> Contacts
+	{
+		get
+		{
+			// vs new Span<Contact>() ??
+			var items = _contacts.Values.ToArray().AsSpan();
+			items.Sort((a, b) => a.ContactTime < b.ContactTime ? -1 : 1);
+			items.BinarySearch((x) => x);
 
-                    break;
-                default:
-                    break;
-            }
-        }
+			return (4, items);
+		}
+	}*/
 
-        // ToString() Position: {X:180.2995 Y:64}, Rotation: 0, Scale: {X:0 Y:0}, Retroherz.Components.ColliderComponent
+	public ColliderComponent(
+		Vector velocity = default(Vector),
+		Vector size = default(Vector),
+		ColliderComponentType type = default(ColliderComponentType))
+	{
+		Velocity = velocity;
+		Size = size;
+		DeltaSize = size;
+		Type = type;
+	}
 
-        ~ColliderComponent() {}
-    }
+	~ColliderComponent() {}
 }
