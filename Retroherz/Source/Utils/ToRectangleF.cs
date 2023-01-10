@@ -6,6 +6,7 @@ namespace Retroherz
 {
 	internal partial class Utils
 	{
+		// Needs a better name
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		internal static RectangleF ToRectangleF(in Vector2 a, in Vector2 b)
 		{

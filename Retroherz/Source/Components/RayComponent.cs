@@ -15,12 +15,12 @@ namespace Retroherz.Components
 	public struct Hit
 	{
 		public int Id;
-		public float Distance;
+		public (Vector Position, double Angle, double Distance)[] Edges = new (Vector, double, double)[2];
 
-		public Hit(int id, float distance)
+		public Hit(int id, (Vector, double, double)[] edges)
 		{
 			Id = id;
-			Distance = distance;
+			Edges = edges;
 		}
 	}
 
@@ -32,7 +32,7 @@ namespace Retroherz.Components
 		public CircleF Circle => new(this.Center, this.Radius);
 		public Vector Center { get; set; }
 		public float Radius { get; }
-		public Bag<Hit> Hits { get; }
+		public Bag<Hit> Hits = new();
 		//public Dictionary<int, ((ColliderComponent collider, TransformComponent transform) target, Vector contactPoint, Vector contactNormal, float contactTime)> Hits;
 
 		
@@ -49,7 +49,7 @@ namespace Retroherz.Components
             //Direction = direction;
 			Center = center;
 			Radius = radius;
-			Hits = new();
+			//Hits = new();
         }
 
         public static implicit operator CircleF(RayComponent rayComponent)

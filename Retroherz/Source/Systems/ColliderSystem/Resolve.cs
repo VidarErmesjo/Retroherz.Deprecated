@@ -8,7 +8,6 @@ using MonoGame.Extended;
 
 using Retroherz.Components;
 using Retroherz.Math;
-using MathD = System.Math;
 
 namespace Retroherz.Systems;
 
@@ -44,10 +43,14 @@ public partial class ColliderSystem
 			}
 
 			// Displace
-			subject.collider.Velocity += contactNormal * new Vector(
+			subject.collider.Velocity += contactNormal * subject.collider.Velocity.Abs() * (1 - contactTime);
+
+
+			// Displace
+			/*subject.collider.Velocity += contactNormal * new Vector(
 				MathD.Abs(subject.collider.Velocity.X),
 				MathD.Abs(subject.collider.Velocity.Y)
-				) * (1 - contactTime);
+				) * (1 - contactTime);*/
 
 			return true;
 		}

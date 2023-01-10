@@ -84,9 +84,10 @@ public struct Vector : IEquatable<object>
 	// Implicit conversion (MonoGame)
 	public static implicit operator Size2(Vector vector) => new(((float)vector.X), ((float)vector.Y));
 	public static implicit operator Point2(Vector vector) => new(((float)vector.X), ((float)vector.Y));
-	public static implicit operator Vector(Vector2 vector) => new(vector.X, vector.Y);
+	public static implicit operator Vector(Point2 point) => new(point.X, point.Y);
 	public static implicit operator Vector(Size2 size) => new(size.Width, size.Height);
 	public static implicit operator Vector2(Vector vector) => new(((float)vector.X), ((float)vector.Y));
+	public static implicit operator Vector(Vector2 vector) => new(vector.X, vector.Y);
 
 	// Helpers
 	public static Vector Zero => new(0, 0);
@@ -104,6 +105,8 @@ public struct Vector : IEquatable<object>
 	}
 
 	// Static methods
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static double Angle(Vector u, Vector v) => (MathD.Atan2(v.Y - u.Y, v.X - u.X));
 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector Clamp(Vector value, Vector min, Vector max) => new(
@@ -134,7 +137,7 @@ public struct Vector : IEquatable<object>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static Vector Normalize(Vector vector)
 	{
-		double magnitude = (1 / vector.Magnitude());
+		double magnitude = 1 / vector.Magnitude();
 		return new(vector.X *= magnitude, vector.Y *= magnitude);
 	}
 

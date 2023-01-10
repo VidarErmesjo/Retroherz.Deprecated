@@ -46,9 +46,10 @@ public class PlayerSystem : EntityProcessingSystem
 
 	public override void Process(GameTime gameTime, int entityId)
 	{
+		var deltaTime = gameTime.GetElapsedSeconds();
+
 		var mouseState = _inputManager.CurrentMouseState;// Mouse.GetState();
 		var keyboardState = Keyboard.GetState();
-		var deltaTime = gameTime.GetElapsedSeconds();
 
 		var collider = _colliderComponentMapper.Get(entityId);           
 		var player = _playerComponentMapper.Get(entityId);

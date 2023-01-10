@@ -82,7 +82,12 @@ public partial class ColliderSystem : EntityUpdateSystem
 
 			// Clear and add all candidates for collision check (self excluded)
 			_candidates.Clear();
-			var inflated = Predictive.BoundingRectangle(entity.collider, entity.transform, deltaTime, padding: false);
+			var inflated = Predictive.BoundingRectangle(
+				entity.collider,
+				entity.transform,
+				deltaTime,
+				false);
+
 			foreach (var candidateId in ActiveEntities.Where(id => id != entityId))
 			{
 				(ColliderComponent collider, TransformComponent transform) candidate = new(
@@ -95,7 +100,7 @@ public partial class ColliderSystem : EntityUpdateSystem
 					candidate.collider,
 					candidate.transform,
 					deltaTime,
-					padding: false)))
+					false)))
 					_candidates.Add(candidateId);
 			}
 

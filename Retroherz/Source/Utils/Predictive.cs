@@ -14,12 +14,12 @@ internal class Predictive
 			ColliderComponent collider,
 			TransformComponent transform,
 			float deltaTime,
-			bool padding = false)
+			bool margin = false)
 		{
 			Point2 center = (
 				(transform.Position) +
 				(collider.Type == ColliderComponentType.Dynamic ? collider.Velocity * deltaTime : Math.Vector.Zero) + 
-				(padding ? collider.Size : collider.Origin));
+				(margin ? collider.Size : collider.Origin));
 			Size2 halfExtents = collider.Origin;
 
 			return new(center, halfExtents);

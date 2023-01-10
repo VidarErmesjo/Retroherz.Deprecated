@@ -43,7 +43,6 @@ namespace Retroherz.Systems
         public override void Draw(GameTime gameTime)
         {
 			var deltaTime = gameTime.GetElapsedSeconds();
-			//_inputManager.Update(gameTime);
 
             _spriteBatch.Begin(
                 sortMode: SpriteSortMode.FrontToBack,
@@ -71,14 +70,20 @@ namespace Retroherz.Systems
 					foreach (var hit in entity.ray.Hits)
 					{
 						var origin = entity.transform.Position + entity.collider.Origin + entity.collider.Velocity * deltaTime;
-						// Normals
-						_spriteBatch.DrawPoint(origin, Color.BlueViolet, 4);
-						_spriteBatch.DrawPoint(origin, Color.Red, 4);
-						//_spriteBatch.DrawLine(origin, origin + hit.contactNormal * 8, Color.Red);
+						_spriteBatch.DrawPoint(origin, Color.White, 4);
 
-						//System.Console.WriteLine(hit.Distance);
+						foreach (var edge in hit.Edges)
+						{
+							_spriteBatch.DrawLine(
+								point: edge.Position,
+								length: float.MaxValue,
+								angle: ((float)edge.Angle),
+								color: Color.BlueViolet);
 
-						(ColliderComponent collider, TransformComponent transform) target = new(
+							_spriteBatch.DrawPoint(edge.Position, Color.White, 4);
+						}
+
+						/*(ColliderComponent collider, TransformComponent transform) target = new(
 							_colliderComponentMapper.Get(hit.Id),
 							_transformComponentMapper.Get(hit.Id)
 						);
@@ -87,7 +92,7 @@ namespace Retroherz.Systems
 						_spriteBatch.DrawLine(
 							origin,
 							target.transform.Position + target.collider.Origin,
-							Color.BlueViolet);	
+							Color.BlueViolet);	*/
 					}
 				}
 
