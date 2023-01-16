@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using MonoGame.Extended;
 using MonoGame.Extended.Collections;
-using MonoGame.Extended.Tiled;
 using Retroherz.Math;
 namespace Retroherz.Systems;
 
@@ -17,9 +16,9 @@ public partial class ShadowsSystem
 		visibilityPolygonPoints.Clear();
 
 		// Create "PolyMap" from Tiled map.
-		ReadOnlySpan<Segment> polyMap = _tiledMap.CreatePolyMap();
+		ReadOnlySpan<PolyMapEdge> polyMap = CreatePolyMap(_tiledMap); //_tiledMap.CreatePolyMap();
 
-		foreach (Segment p in polyMap)
+		foreach (PolyMapEdge p in polyMap)
 		{
 			// Take the start point, then the end point (we could use a pool of
 			// non-duplicated points here, it would be more optimal).
@@ -56,9 +55,9 @@ public partial class ShadowsSystem
 					bool valid = false;
 
 					// Check for ray intersection with all edges.
-					foreach (Segment q in polyMap)
+					foreach (PolyMapEdge q in polyMap)
 					{
-						// Createa line segment vector
+						// Create line segment vector
 						Vector segment = q.End - q.Start;
 
 						if (Vector.Abs(segment - ray.Direction) > Vector.Zero)
@@ -102,17 +101,14 @@ public partial class ShadowsSystem
 		}
 
 		// Remove duplicate (or simply similar) points from polygon.
-		Span<VisibilityPolygonPoint> sorted = visibilityPolygonPoints
+		VisibilityPolygon = new(
+			visibilityPolygonPoints
 			.Distinct(new VisibilityPolygonPointComparer())
 			.ToArray()
-			.AsSpan();
+		);
 
 		// Sort perimeter points by angle from source. 
 		// This will allow us to draw a triangle fan.
-		sorted.Sort((a, b) => a.Theta < b.Theta ? -1 : 1);
-	
-		VisibilityPolygon = new(sorted.ToArray());
-
-		//Console.WriteLine(VisibilityPolygon.Length);
+		VisibilityPolygon.Span.Sort((a, b) => a.Theta < b.Theta ? -1 : 1);
 	}
 }

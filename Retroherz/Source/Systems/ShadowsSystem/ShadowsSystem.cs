@@ -12,7 +12,7 @@ using Retroherz.Math;
 
 namespace Retroherz.Systems;
 
-public partial class ShadowsSystem	: EntityUpdateSystem, IDrawSystem
+public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 {
 	private readonly OrthographicCamera _camera;
 	private readonly SpriteBatch _spriteBatch;
@@ -23,12 +23,16 @@ public partial class ShadowsSystem	: EntityUpdateSystem, IDrawSystem
 	private ComponentMapper<SpriteComponent> _spriteComponentMapper;
 	private ComponentMapper<TransformComponent> _transformComponentMapper;
 
-	internal readonly Vector2[] triangle = new Vector2[3];
-	internal readonly Bag<VisibilityPolygonPoint> visibilityPolygonPoints = new();
+	//internal Memory<PolyMapEdge> polyMap;
+	internal static Memory<PolyMapCell> Cells;
+	internal static readonly Bag<PolyMapEdge> PolyMap = new();
+
+	internal static readonly Vector2[] triangle = new Vector2[3];
+	internal static readonly Bag<VisibilityPolygonPoint> visibilityPolygonPoints = new();
 
 	internal static Memory<VisibilityPolygonPoint> VisibilityPolygon = new();
 
-	internal (ColliderComponent collider, PlayerComponent player, SpriteComponent sprite, TransformComponent transform) entity;
+	internal static (ColliderComponent collider, PlayerComponent player, SpriteComponent sprite, TransformComponent transform) entity;
 	
 	public ShadowsSystem(OrthographicCamera camera, SpriteBatch spriteBatch, TiledMap tiledMap)
 		: base(Aspect.All(typeof(ColliderComponent), typeof(SpriteComponent), typeof(TransformComponent)))
@@ -37,8 +41,7 @@ public partial class ShadowsSystem	: EntityUpdateSystem, IDrawSystem
 		_spriteBatch = spriteBatch;
 		_tiledMap = tiledMap;
 
-		// Will be resized if needed (probably).
-		VisibilityPolygon = new(new VisibilityPolygonPoint[50]);
+		Cells = new(new PolyMapCell[tiledMap.Width * tiledMap.Height]);
 	}
 
 	public override void Initialize(IComponentMapperService mapperService)
@@ -102,8 +105,9 @@ public partial class ShadowsSystem	: EntityUpdateSystem, IDrawSystem
 			triangle[2] = VisibilityPolygon.ToArray()[0].Position;
 			_spriteBatch.DrawPolygon(Vector2.Zero, new Polygon(triangle), Color.CornflowerBlue);
 
+			ReadOnlySpan<PolyMapEdge> polyMap = CreatePolyMap(_tiledMap);
 			// "PolyMap"
-			foreach (var edge in _tiledMap.CreatePolyMap())
+			foreach (var edge in polyMap)
 				_spriteBatch.DrawLine(edge.Start, edge.End, Color.Red);
 		}
 

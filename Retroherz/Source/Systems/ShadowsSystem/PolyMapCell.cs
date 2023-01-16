@@ -1,12 +1,12 @@
 namespace Retroherz.Systems;
-public partial class ShadowsSystem
+
+internal struct PolyMapCell
 {
-	internal struct PolyMapCell
-	{
-		public (int Id, bool Exists) North;
-		public (int Id, bool Exists) South;
-		public (int Id, bool Exists) East;
-		public (int Id, bool Exists) West;
-		public required bool Exists;
-	}
+	public (int Id, bool Exists) Northern;
+	public (int Id, bool Exists) Southern;
+	public (int Id, bool Exists) Eastern;
+	public (int Id, bool Exists) Western;
+	public bool Exists;
+
+	//public PolyMapCell(bool exists) => Exists = exists;
 }

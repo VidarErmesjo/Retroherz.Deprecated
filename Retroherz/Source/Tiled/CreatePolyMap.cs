@@ -1,4 +1,4 @@
-using System;
+/*using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
@@ -243,4 +243,4 @@ public static partial class TiledExtensions
 
 		return PolyMap.AsReadOnlySpan();
 	}
-}
+}*/

@@ -213,6 +213,9 @@ File name: 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Re
 
 			// Arch END
 
+			//ShadowsSystem shadowsSystem = new(camera, spriteBatch, tiledMap);
+			//shadowsSystem.CreatePolyMap(tiledMap);
+
             world = new WorldBuilder()
 			    .AddSystem(new PlayerSystem(assetsManager, camera, inputManager))
 				.AddSystem(new CameraSystem(camera, tiledMap))
