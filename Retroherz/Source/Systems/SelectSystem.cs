@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Xna.Framework;
@@ -44,7 +45,7 @@ namespace Retroherz.Systems
 		{
 			var deltaTime = gameTime.GetElapsedSeconds();
 
-			foreach (var entityId in ActiveEntities)
+			foreach (int entityId in ActiveEntities.AsReadOnlySpan())
 			{
 				(ColliderComponent collider, MetaComponent meta, PlayerComponent player, TransformComponent transform) entity = new(
 					_colliderComponentMapper.Get(entityId),
@@ -64,8 +65,8 @@ namespace Retroherz.Systems
 				}
 
 				// Get focused and selected entities
-				var inflated = Predictive.BoundingRectangle(entity.collider, entity.transform, deltaTime);
-				if (inflated.Intersects(_inputManager.Selection))
+				var predictive = Predictive.BoundingRectangle(entity.collider, entity.transform, deltaTime);
+				if (predictive.Intersects(_inputManager.Selection))
 				{
 					if(!_focused.Contains(entityId))
 						_focused.Add(entityId);

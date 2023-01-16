@@ -17,6 +17,8 @@ using Retroherz.Math;
 namespace Retroherz.Systems;
 public partial class ColliderSystem : EntityUpdateSystem
 {
+	// EXP
+	public static Bag<int> Colliders = new();
 	// Bag of value tuples to hold collision candidates (after broad phase)
 	private readonly Bag<int> _candidates = new();
 
@@ -40,7 +42,7 @@ public partial class ColliderSystem : EntityUpdateSystem
 	{
 		var deltaTime = gameTime.GetElapsedSeconds();
 
-		foreach (var entityId in ActiveEntities)
+		foreach (int entityId in ActiveEntities.AsReadOnlySpan())
 		{
 			// Get entity components
 			(ColliderComponent collider, MetaComponent meta, TransformComponent transform) entity = new(
@@ -76,7 +78,7 @@ public partial class ColliderSystem : EntityUpdateSystem
 					Vector randomVector = Vector.Random();
 
 					// Buggy!
-					entity.collider.Velocity = Vector2.Clamp(randomVector, -Vector.One, Vector.One) * entity.collider.Size;
+					entity.collider.Velocity = Vector.Clamp(randomVector, -Vector.One, Vector.One) * entity.collider.Size;
 				}
 			}
 
@@ -88,8 +90,12 @@ public partial class ColliderSystem : EntityUpdateSystem
 				deltaTime,
 				false);
 
-			foreach (var candidateId in ActiveEntities.Where(id => id != entityId))
+			foreach(int candidateId in ActiveEntities.AsReadOnlySpan())	// OPT??
+			//foreach (var candidateId in ActiveEntities.Where(id => id != entityId))
 			{
+				if (candidateId == entityId)
+					continue;
+
 				(ColliderComponent collider, TransformComponent transform) candidate = new(
 					_colliderComponentMapper.Get(candidateId),
 					_transformComponentMapper.Get(candidateId)
@@ -107,12 +113,13 @@ public partial class ColliderSystem : EntityUpdateSystem
 			// Sort collision in order of distance
 			Vector contactPoint = Vector.Zero;
 			Vector contactNormal = Vector.Zero;
-			double contactTime = 0;
+			float contactTime = 0;
 
 			// Work out collisions ...
 			entity.collider.Constraints.Clear();
 			entity.collider.Contacts.Clear();
-			foreach (var candidateId in _candidates)
+			foreach (int candidateId in _candidates.ToArray().AsSpan())	// OPT?
+			//foreach (var candidateId in _candidates)
 			{
 				(ColliderComponent collider, TransformComponent transform) candidate = new(
 					_colliderComponentMapper.Get(candidateId),
@@ -138,7 +145,13 @@ public partial class ColliderSystem : EntityUpdateSystem
 					deltaTime))
 				{					
 					// On collision... add it to contact information for resolves, effects, visuals etc.
-					var contact = new Contact(candidateId, contactPoint, contactNormal, contactTime);
+					(int, Vector, Vector, double) contact = new(
+						candidateId,
+						contactPoint,
+						contactNormal,
+						contactTime
+					);
+
 					entity.collider.Contacts.Add(contact);
 				}
 			}
@@ -169,9 +182,8 @@ public partial class ColliderSystem : EntityUpdateSystem
 
 			if (entity.collider.Contacts.Count > 0)
 			{
-
 				// Do the sort
-				Span<Contact> contacts = entity.collider.Contacts.ToArray().AsSpan();
+				var contacts = entity.collider.Contacts.ToArray().AsSpan();
 				contacts.Sort((a, b) => a.ContactTime < b.ContactTime ? -1 : 1 );
 
 				// Now resolve the collision in correct order (shortest time)

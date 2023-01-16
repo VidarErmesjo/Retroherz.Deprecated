@@ -15,9 +15,9 @@ namespace Retroherz.Components
 	public struct Hit
 	{
 		public int Id;
-		public (Vector Position, double Angle, double Distance)[] Edges = new (Vector, double, double)[2];
+		public (Vector2 Position, double Angle, double Distance)[] Edges = new (Vector2, double, double)[3];
 
-		public Hit(int id, (Vector, double, double)[] edges)
+		public Hit(int id, (Vector2, double, double)[] edges)
 		{
 			Id = id;
 			Edges = edges;
@@ -26,14 +26,14 @@ namespace Retroherz.Components
 
     public class RayComponent
     {
-        public Vector Origin { get; }
-        public Vector Direction { get; }
+        public Vector2 Origin { get; }
+        public Vector2 Direction { get; }
 
 		public CircleF Circle => new(this.Center, this.Radius);
-		public Vector Center { get; set; }
+		public Vector2 Center { get; set; }
 		public float Radius { get; }
 		public Bag<Hit> Hits = new();
-		//public Dictionary<int, ((ColliderComponent collider, TransformComponent transform) target, Vector contactPoint, Vector contactNormal, float contactTime)> Hits;
+		//public Dictionary<int, ((ColliderComponent collider, TransformComponent transform) target, Vector2 contactPoint, Vector2 contactNormal, float contactTime)> Hits;
 
 		
         public RayComponent(RayComponent rayComponent)
@@ -43,7 +43,7 @@ namespace Retroherz.Components
 			Hits = rayComponent.Hits;
         }
 
-        public RayComponent(Vector center = default(Vector), float radius = 1)
+        public RayComponent(Vector2 center = default(Vector2), float radius = 1)
         {
             //Origin = origin;
             //Direction = direction;

@@ -25,15 +25,15 @@ public partial class ColliderSystem
 	internal bool Constrained(
 		int subjectId,
 		int obstacleId,
-		out Vector contactPoint,
-		out Vector contactNormal,
-		out double contactTime,
+		out Vector2 contactPoint,
+		out Vector2 contactNormal,
+		out float contactTime,
 		float deltaTime)
 	{
-		contactPoint = Vector.Zero;
-		contactNormal = Vector.Zero;
+		contactPoint = Vector2.Zero;
+		contactNormal = Vector2.Zero;
 		contactTime = 0;
-		double timeHitFar = 0;
+		float timeHitFar = 0;
 
 		(ColliderComponent collider, TransformComponent transform) subject = new(
 			_colliderComponentMapper.Get(subjectId),
@@ -44,7 +44,7 @@ public partial class ColliderSystem
 		if (subject.collider.Type == ColliderComponentType.Static) return false;
 
 		// Check if subject is actually changing size
-		//if (subject.collider.DeltaSize == Vector.Zero) return false;
+		//if (subject.collider.DeltaSize == Vector2.Zero) return false;
 
 		(ColliderComponent collider, TransformComponent transform) obstacle = new(
 			_colliderComponentMapper.Get(obstacleId),

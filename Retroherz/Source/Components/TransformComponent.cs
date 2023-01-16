@@ -11,7 +11,7 @@ public struct Transform// : IMovable, IRotatable
 	public Vector Position { get; set; }
 	public float Rotation { get; set; }
 
-	public Transform(Vector position) => Position = position;
+	public Transform(Vector position = default(Vector)) => Position = position;
 	public Transform(float x, float y) => Position = new(x, y);
 
 	public override string ToString()  => "[" + $"Position:{Position} Rotation:{Rotation}" + "]";
@@ -21,15 +21,8 @@ public class TransformComponent// : IMovable
 {
 	public Vector Position { get; set; }
 
-	public TransformComponent(Vector position)
-	{
-		Position = position;
-	}
-
-	public TransformComponent(float x, float y)
-	{
-		Position = new(x, y);
-	}
+	public TransformComponent(Vector position = default(Vector)) => Position = position;
+	public TransformComponent(float x, float y) => Position = new(x, y);
 
 	~TransformComponent() {}
 

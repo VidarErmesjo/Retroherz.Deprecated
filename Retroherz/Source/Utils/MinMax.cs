@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
+using Retroherz.Math;
 
 namespace Retroherz
 {

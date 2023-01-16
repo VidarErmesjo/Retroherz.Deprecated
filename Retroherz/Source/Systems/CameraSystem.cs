@@ -51,7 +51,7 @@ namespace Retroherz.Systems
 			var min = new Vector2(_camera.BoundingRectangle.Width, _camera.BoundingRectangle.Height) / 2;
 			var max = new Vector2(_tiledMap.WidthInPixels, _tiledMap.HeightInPixels) - min;
 
-			var lookAt = Vector2.Clamp(transform.Position + collider.Origin, Vector2.Round(min), Vector2.Round(max));
+			var lookAt = Vector2.Clamp(transform.Position + collider.Origin, min, max);
 			_camera.LookAt(lookAt);
         }
     }

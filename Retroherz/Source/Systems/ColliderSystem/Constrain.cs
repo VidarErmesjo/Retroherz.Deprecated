@@ -22,10 +22,10 @@ public partial class ColliderSystem
 		(ColliderComponent collider, TransformComponent transform) obstacle,
 		float deltaTime)
 	{
-		Vector contactPoint = Vector.Zero;
-		Vector contactNormal = Vector.Zero;
-		double contactTime = 0;
-		double timeHitFar = 0;
+		Vector2 contactPoint = Vector2.Zero;
+		Vector2 contactNormal = Vector2.Zero;
+		float contactTime = 0;
+		float timeHitFar = 0;
 
 		// Expand obstacle collider box by subject dimensions
 		(ColliderComponent collider, TransformComponent transform) rectangle = (
@@ -46,20 +46,20 @@ public partial class ColliderSystem
 					if (contactTime >= 0f && contactTime < 1f)
 			{
 				// Resolve diagonal freak case (single contact).
-				/*if (contactNormal == Vector.Zero && subject.collider.Constraints.Count == 1)
+				/*if (contactNormal == Vector2.Zero && subject.collider.Constraints.Count == 1)
 				{
-					contactNormal = Vector.Clamp(-subject.collider.Velocity, -Vector.One, Vector.One);
+					contactNormal = Vector2.Clamp(-subject.collider.Velocity, -Vector2.One, Vector2.One);
 					System.Console.WriteLine("Diagonal!");
 				}*/
 
 				var force = contactNormal * subject.collider.DeltaOrigin;// * (1 - MathF.Abs(contactTime));
-				//force = contactNormal * Vector.One;
+				//force = contactNormal * Vector2.One;
 
 				subject.collider.Velocity += force;
 
 				System.Console.WriteLine($"F:{force} CN:{contactNormal} T:{contactTime}");
 
-				/*subject.collider.Velocity += contactNormal * new Vector(
+				/*subject.collider.Velocity += contactNormal * new Vector2(
 					MathF.Abs(subject.collider.Velocity.X),
 					MathF.Abs(subject.collider.Velocity.Y)
 					) * (1 - contactTime);*/

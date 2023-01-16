@@ -1,13 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
 using MonoGame.Aseprite.Documents;
 using MonoGame.Aseprite.Graphics;
+using Retroherz.Math;
 
 namespace Retroherz.Components
 {
@@ -15,30 +11,30 @@ namespace Retroherz.Components
     {
         private readonly AnimatedSprite _animatedSprite;
 
-        public Vector2 Position
+        public Vector Position
         {
             get => _animatedSprite.Position;
             set => _animatedSprite.Position = value;
         }
 
 		// Needed?
-        public Vector2 Origin
+        public Vector Origin
         {
             get => _animatedSprite.Origin;
             set => _animatedSprite.Origin = value;
         }
 
-        public Vector2 Scale
+        public Vector Scale
         {
             get => _animatedSprite.Scale;
 			set
 			{
 				if (_animatedSprite.Animating)
-					_animatedSprite.Scale = new Vector2(
+					_animatedSprite.Scale = new Vector(
 						value.X / _animatedSprite.Width,
 						value.Y / _animatedSprite.Height);
 				else
-					_animatedSprite.Scale = new Vector2(
+					_animatedSprite.Scale = new Vector(
 						value.X / _animatedSprite.Texture.Width,
 						value.Y / _animatedSprite.Texture.Height);
 			}
@@ -55,7 +51,7 @@ namespace Retroherz.Components
             _animatedSprite = new AnimatedSprite(asepriteDocument);
         }
 
-		public SpriteComponent(Texture2D texture, Vector2 position = default(Vector2))
+		public SpriteComponent(Texture2D texture, Vector position = default(Vector))
 		{
 			_animatedSprite = new AnimatedSprite(texture, position);
 		}
@@ -76,7 +72,7 @@ namespace Retroherz.Components
 					origin: this.Origin,
 					scale: this.Scale,
 					effects: SpriteEffects.None,
-					layerDepth: 0);
+					layerDepth: 1);
 		}
 
         public void Play(string animationName) => _animatedSprite.Play(animationName);

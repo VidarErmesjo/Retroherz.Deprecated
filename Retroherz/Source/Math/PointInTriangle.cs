@@ -2,7 +2,7 @@ using MonoGame.Extended;
 using Microsoft.Xna.Framework;
 using System;
 
-namespace Retroherz.MathHelper
+namespace Retroherz.Math
 {
     public class PointInTriangle
     {

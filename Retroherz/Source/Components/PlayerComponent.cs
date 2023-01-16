@@ -7,6 +7,8 @@ using Microsoft.Xna.Framework;
 using MonoGame.Aseprite.Graphics;
 using MonoGame.Extended.Collections;
 
+using Retroherz.Math;
+
 namespace Retroherz.Components
 {
 	// ControllerComponent ??
@@ -16,6 +18,7 @@ namespace Retroherz.Components
 		//public Dictionary<int, (ColliderComponent collider, TransformComponent transform)> Selected;
 		public Bag<int> Focused;
 		public Bag<int> Selected;
+
         public float MaxSpeed { get; private set; } // Acceleration??
 
         public PlayerComponent(float maxSpeed = 100.0f)

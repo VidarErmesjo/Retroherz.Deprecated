@@ -1,5 +1,5 @@
 using System;
-using Microsoft.Xna.Framework;
+using Retroherz.Math;
 
 namespace Retroherz.Components
 {
@@ -9,15 +9,15 @@ namespace Retroherz.Components
 
         public float charge { get; set; }
         public bool isCharging { get; private set; }
-        public Vector2 origin { get ; set; }
-        public Vector2 destination { get; set; }
+        public Vector origin { get ; set; }
+        public Vector destination { get; set; }
 
         public WeaponComponent(int id)
         {
             Id = id;
             charge = 0.0f;
             isCharging = false;
-            destination = new Vector2(0.0f, 0.0f);
+            destination = new Vector(0.0f, 0.0f);
         }
 
         public void toggleIsCharging()

@@ -6,6 +6,10 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using MonoGame.Extended;
+using MonoGame.Extended.Collections;
+using MonoGame.Extended.Entities;
+using MonoGame.Extended.Tiled;
+using MonoGame.Extended.ViewportAdapters;
 
 using Arch;
 using Arch.Core;
@@ -13,13 +17,11 @@ using Arch.Core.CommandBuffer;
 using Arch.Core.Extensions;
 using Arch.Core.Utils;
 
-using MonoGame.Extended.Entities;
-using MonoGame.Extended.Tiled;
 using MonoGame.Extended.Tiled.Renderers;
 
-using MonoGame.Assets;
 using Retroherz.Components;
 using Retroherz.Systems;
+using Retroherz.Managers;
 using Retroherz.Math;
 
 // RetroHerzen ???
@@ -27,51 +29,48 @@ using Retroherz.Math;
 // vErmNGN
 namespace Retroherz
 {
-	public static class ECS
-	{
-
-		public static CameraSystem CameraSystem;
-		public static TiledMapSystem TiledMapSystem;
-	}
-
     public class Retroherz : Game
     {
         private bool _isDisposed = false;
 
-		private Arch.Core.World World;
-        private MonoGame.Extended.Entities.World _world;
-		
-        public readonly AssetsManager AssetsManager;
-        public readonly GameManager GameManager;
+		private Arch.Core.World ArchWorld;
 
-		public InputManager InputManager;
+		// NEW
+	
+		readonly AssetsManager assetsManager;
+		readonly GraphicsManager graphicsManager;
 
-		private OrthographicCamera Camera;
-        private SpriteBatch SpriteBatch;
-		private TiledMap TiledMap;
+		InputManager inputManager;
+		OrthographicCamera camera;
+		GraphicsDevice graphics;
+        SpriteBatch spriteBatch;
+		TiledMapRenderer tiledMapRenderer;
+		(Effect Blur, Effect Combine, Effect Light) effect;
+		(RenderTarget2D BlurMap, RenderTarget2D ColorMap, RenderTarget2D LightMap) renderTarget;
+		TiledMap tiledMap;
+		MonoGame.Extended.Entities.World world;
 
-        public Retroherz(Size resolution = default(Size), bool fullscreen = true)
+		// NEW
+
+        public Retroherz(GraphicsMode mode = GraphicsMode.Default, bool fullscreen = true, bool scale = false)
         {
-            AssetsManager = new AssetsManager(Content);
-            GameManager = new GameManager(this, resolution, fullscreen);
-
-			// Refactor to make instances here!
-			//Camera = new(GameManager.GraphicsDeviceManager.GraphicsDevice);
-			//InputManager = new(Camera);
+			assetsManager = new(Content);
+			graphicsManager = new(this, mode, fullscreen, scale);
         }
 
         protected override void LoadContent()
         {
-            AssetsManager.LoadContent();
-
-            /* EXPERIMENTAL! */
-
-            TiledMap = Content.Load<TiledMap>("Tiled/Shitmap");
-
-           //ShadowCasting.ShadowCasting.ConvertTileMapToPolyMap(_tiledMap);
-
-
-            /* !EXPERIMENTAL */
+            assetsManager.LoadContent();
+            tiledMap =  Content.Load<TiledMap>("Tiled/Shitmap"); //AssetsManager.Map("Shitmap");
+/*
+Unhandled exception. Microsoft.Xna.Framework.Content.ContentLoadException: The content file was not found.
+ ---> System.IO.FileNotFoundException: Could not find file 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Retroherz\bin\Debug\net7.0-windows\Content\Tiled\Shitbrick.xnb'.
+File name: 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Retroherz\bin\Debug\net7.0-windows\Content\Tiled\Shitbrick.xnb'
+*/
+			// Load effects
+            effect.Blur = assetsManager.Effect("Blur");
+			effect.Combine = assetsManager.Effect("Combine");
+            effect.Light = assetsManager.Effect("Light");
 
             base.LoadContent();
         }
@@ -82,13 +81,15 @@ namespace Retroherz
 			position.Y += 9;
             Vector size = new(32, 32);
 
-            var player = _world.CreateEntity();
+            var player = world.CreateEntity();
 			player.Attach(new MetaComponent(id: player.Id, type: MetaComponentType.Player));
             player.Attach(new PlayerComponent());
-            player.Attach(new SpriteComponent(asepriteDocument: AssetsManager.Sprite("Shitsprite")));
+			player.Attach(new PointLightComponent(lightEffect: effect.Light, radius: 128, color: Color.White));
+            player.Attach(new SpriteComponent(asepriteDocument: assetsManager.Sprite("Shitsprite")));
             player.Attach(new TransformComponent(position: position));
             player.Attach(new ColliderComponent(size: size, type: ColliderComponentType.Dynamic));
 			player.Attach(new RayComponent(radius: 64));
+			player.Attach(new Collider { Velocity = Vector.Zero }); // :)
         }
 
 		public class TileComparer : IComparable<Tile>
@@ -102,7 +103,7 @@ namespace Retroherz
         public void CreateActors(int amount = 1)
         {
 			TileComparer tileComparer = new();
-			var tiles = Utils.ParseTiledMap(TiledMap).ToArray().Where(tile => tile.Type == TiledMapType.Empty).ToList();
+			var tiles = Utils.ParseTiledMap(tiledMap).ToArray().Where(tile => tile.Type == TiledMapType.Empty).ToList();
 
 			for (int i = 0; i < amount; i++ )
 			{
@@ -112,16 +113,16 @@ namespace Retroherz
 				var spawnTile = ((int)System.Math.Floor(Random.Shared.NextSingle() * tiles.Count));
 				var tile = tiles.ElementAt(spawnTile);
 
-				Vector position = new Vector(tile.X * TiledMap.TileWidth, tile.Y * TiledMap.TileHeight);
+				Vector position = new Vector(tile.X * tiledMap.TileWidth, tile.Y * tiledMap.TileHeight);
 				Vector size = new(randomSize, randomSize);
 				Vector velocity = Vector.Random();
 				velocity = Vector.Clamp(velocity, -Vector.One, Vector.One) * size;
 				var rectangle = new RectangleF(position, size);
 
-				var actor = _world.CreateEntity();
+				var actor = world.CreateEntity();
 				actor.Attach(new ActorComponent());
 				actor.Attach(new MetaComponent(id: actor.Id, type: MetaComponentType.NPC));
-				actor.Attach(new SpriteComponent(asepriteDocument: AssetsManager.Sprite("Shitsprite")));
+				actor.Attach(new SpriteComponent(asepriteDocument: assetsManager.Sprite("Shitsprite")));
 				actor.Attach(new TransformComponent(position: position));
 				actor.Attach(new ColliderComponent(velocity: velocity, size: size, type: ColliderComponentType.Dynamic));
 				actor.Attach(new RayComponent(radius: randomSize * 2));
@@ -133,131 +134,150 @@ namespace Retroherz
         protected override void Initialize()
         {
             base.Initialize();
-            GameManager.Initialize();
+			graphicsManager.Initialize(out camera, out graphics);
+			inputManager = new(camera);
+			spriteBatch = new(graphics);
+			tiledMapRenderer = new(graphics);
 
-			Camera = new(GraphicsDevice);
-            SpriteBatch = new SpriteBatch(GraphicsDevice);
+			Console.WriteLine($"{graphicsManager}");
 
-			InputManager = new(Camera);
-			InputManager.Initialize();
+
+			// Set up all render targets.
+			// The blur map does not need a depth buffer			
+			renderTarget.BlurMap = new(
+				graphics,
+				graphicsManager.VirtualResolution.Width,
+				graphicsManager.VirtualResolution.Height,
+				false,
+				SurfaceFormat.Color,
+				DepthFormat.None,
+				16,
+				RenderTargetUsage.DiscardContents
+			);
+
+			renderTarget.ColorMap = new(
+				graphics,
+				graphicsManager.VirtualResolution.Width,
+				graphicsManager.VirtualResolution.Height,
+				false,
+				SurfaceFormat.Color,
+				DepthFormat.Depth16,
+				16,
+				RenderTargetUsage.DiscardContents
+			);
+
+			renderTarget.LightMap = new(
+				graphics,
+				graphicsManager.VirtualResolution.Width,
+				graphicsManager.VirtualResolution.Height,
+				false,
+				SurfaceFormat.Color,
+				DepthFormat.Depth16,
+				16,
+				RenderTargetUsage.DiscardContents
+			);
+
+			tiledMapRenderer.LoadMap(tiledMap);
 
 			// Arch START
 			// Bytte fra Extended ESC til Arch? :)
-			World = Arch.Core.World.Create();
+			ArchWorld = Arch.Core.World.Create();
 
 			// COMPONENT (struct over class)
-			var entity = World.Create(new Transform(0, 0));
-			System.Console.WriteLine(entity.Get<Transform>());
+			Arch.Core.Entity entity = ArchWorld.Create(new Transform(0, 0));
+			Console.WriteLine(entity.Get<Transform>());
 
 			if (entity.Has<Transform>())
 				entity.Set(new Transform(4, 4));
 
-			System.Console.WriteLine(entity.Get<Transform>());
+			Console.WriteLine(entity.Get<Transform>());
 
 			// SYSTEM
 			var query = new QueryDescription().WithAll<Transform>();
-			World.Query(in query, (in Arch.Core.Entity e) => {
-				e.Set(new Transform(3, 3));
-				e.Get<Transform>().Rotation = 4;
-				System.Console.WriteLine(e.IsAlive());
-				World.Destroy(in e);
+			ArchWorld.Query(in query, (in Arch.Core.Entity entity) => {
+				entity.Set(new Transform(3, 3));
+				entity.Get<Transform>().Rotation = 4;
+				Console.WriteLine(entity.IsAlive());
+				ArchWorld.Destroy(in entity);
 			});
 
-			World.Query(in query, (ref Transform transform) => {
+			ArchWorld.Query(in query, (ref Transform transform) => {
 				transform.Position = Vector.One * 2;
 			});
 
 			if (entity.IsAlive())
 				System.Console.WriteLine(entity.Get<Transform>());
-			System.Console.WriteLine(entity.IsAlive());
+			Console.WriteLine(entity.IsAlive());
 
-			Arch.Core.World.Destroy(World);
+			Arch.Core.World.Destroy(ArchWorld);
 
 			// Arch END
 
-            _world = new WorldBuilder()
-                .AddSystem(new TiledMapSystem(TiledMap, GraphicsDevice, Camera))
+            world = new WorldBuilder()
+			    .AddSystem(new PlayerSystem(assetsManager, camera, inputManager))
+				.AddSystem(new CameraSystem(camera, tiledMap))
+				//.AddSystem(new VisibilitySystem(camera, effect, graphics, renderTarget, spriteBatch))
+				.AddSystem(new ShadowsSystem(camera, spriteBatch, tiledMap))
+                .AddSystem(new TiledMapSystem(camera, tiledMap, tiledMapRenderer))
                 .AddSystem(new ExpirySystem())
-                .AddSystem(new PlayerSystem(Camera, InputManager))
-				.AddSystem(new SelectSystem(InputManager))
-				.AddSystem(new RaySystem())
+				.AddSystem(new SelectSystem(inputManager))
                 .AddSystem(new ColliderSystem())
-                .AddSystem(new UpdateSystem(InputManager))
-                .AddSystem(new RenderSystem(GraphicsDevice, Camera))
-				.AddSystem(new DebugSystem(GraphicsDevice, Camera))
-				.AddSystem(new CameraSystem(Camera, TiledMap))
+                //.AddSystem(new UpdateSystem(inputManager))
+                .AddSystem(new RenderSystem(camera, effect, graphics, renderTarget, spriteBatch, tiledMapRenderer))
+				.AddSystem(new DebugSystem(camera, spriteBatch))
 				//.AddSystem(new MetaSystem())
-				.AddSystem(new HUDSystem(GraphicsDevice, Camera, InputManager))
+				.AddSystem(new HUDSystem(camera, inputManager, spriteBatch))
                 .Build();
-            _world.Initialize();
+            world.Initialize();
 
-			//EntityManager.Initialize(_world);
-            //Components.Add(_world);
+			//EntityManager.Initialize(World;);
+            //Components.Add(World;);
 
 			var coolNames = new List<string> {"Halsbrann Sivertsen", "Salman Rushtid"};
 
 			CreatePlayer();
 			//CreateActors(50);
 
-			var actor = _world.CreateEntity();
+			var actor = world.CreateEntity();
 			actor.Attach(new TransformComponent(position: Vector.One * 16));
 			actor.Attach(new ColliderComponent(
 				size: Vector.Clamp(Vector.One * Random.Shared.NextSingle() * 8, Vector.One * 8, Vector.One * 16),
 				velocity: Vector.One * 16,
 				type: ColliderComponentType.Dynamic));
 			actor.Attach(new MetaComponent(id: actor.Id, type: MetaComponentType.NPC));
-			actor.Attach(new SpriteComponent(AssetsManager.Sprite("Shitsprite")));
-
-            Camera.ZoomIn(6f);
-            //GameManager.Camera.Rotate(MathHelper.Pi / 4);
-
-            // Access TileMapLayers
-            //var whatIs = _tiledMap.GetLayer<TiledMapTileLayer>("Tile Layer 1");
-            //var whatIs = _tiledMap.GetLayer("Tile Layer 1") as TiledMapTileLayer;
-            //var whatIs = _tiledMap.TileLayers[0]; // can return null
-
-            //whatIs.SetTile(1, 1, 1);
-
-			// Vector
-			Vector vector = new(65656, 656);
-			System.Console.WriteLine(vector);
-			System.Console.WriteLine(vector.Magnitude());
-			System.Console.WriteLine(vector.Normalized());
-			System.Console.WriteLine(vector);
-			vector.Normalize();
-			System.Console.WriteLine(vector);
+			actor.Attach(new SpriteComponent(assetsManager.Sprite("Shitsprite")));
         }
 
         protected override void Update(GameTime gameTime)
         {
-            if(GameManager.GamePadState.Buttons.Back == ButtonState.Pressed || GameManager.KeyboardState.IsKeyDown(Keys.Escape))
+            if(GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            GameManager.Update();
-			InputManager.Update(gameTime);
-            _world.Update(gameTime);
+			inputManager.Update(gameTime);
+			graphicsManager.Update(gameTime);
+            world.Update(gameTime);
+
             base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.SetRenderTarget(GameManager.VirtualRenderTarget);
-            GraphicsDevice.Clear(Color.Transparent);
+			//graphics.SetRenderTarget(graphicsManager.RenderTarget); 
+			graphics.Clear(Color.Transparent);
 
-            _world.Draw(gameTime);
+			world.Draw(gameTime);
 
-            GraphicsDevice.SetRenderTarget(null);
-            GraphicsDevice.Clear(Color.Transparent);
+			/*graphics.SetRenderTarget(null);
+			graphics.Clear(Color.Black);
 
-            SpriteBatch.Begin(                
-                SpriteSortMode.FrontToBack,
-                BlendState.NonPremultiplied,
-                SamplerState.PointClamp,
-                effect: null);
-            SpriteBatch.Draw(GameManager.VirtualRenderTarget, GameManager.DeviceRectangle, Color.White);
-            SpriteBatch.End();
-
-            base.Draw(gameTime);
+			spriteBatch.Begin(
+				SpriteSortMode.Immediate,
+				BlendState.Opaque,
+				SamplerState.PointClamp
+				
+			);
+			spriteBatch.Draw(graphicsManager.RenderTarget, graphicsManager.DestinationRectangle, Color.White);
+			spriteBatch.End();*/
         }
 
         /// <summary>
@@ -266,31 +286,37 @@ namespace Retroherz
         /// <remarks>   
         ///     Includes effects
         /// </remarks>
-        /*private void Draw(SpriteBatch spriteBatch, Effect effect = null)
+        /*private void Draw(SpriteBatch SpriteBatch, Effect Effect = null)
         {
            GameManager.GraphicsDeviceManager.GraphicsDevice.SetRenderTarget(null);
 
-            spriteBatch.Begin(
+            SpriteBatch.Begin(
                 SpriteSortMode.Immediate,
                 BlendState.NonPremultiplied,
                 SamplerState.PointClamp,
-                effect: effect);
+                Effect: Effect);
 
-            spriteBatch.Draw(
+            SpriteBatch.Draw(
                 (GameManager.LowResolution ? GameManager.VirtualRenderTarget : GameManager.DeviceRenderTarget),
                 GameManager.DeviceRectangle,
                 Color.White);
 
-            spriteBatch.End();
+            SpriteBatch.End();
         }*/
 
         protected override void UnloadContent()
         {
-            GameManager.UnloadContent();
-            AssetsManager.UnloadContent();
+			Console.WriteLine($"EntityCount:{world.EntityCount}");
+            assetsManager.UnloadContent();
             base.UnloadContent();
-            this.Dispose();
         }
+
+		// IDisposable
+		public new void Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
 
         protected override void Dispose(bool disposing)
         {
@@ -299,17 +325,29 @@ namespace Retroherz
 
             if(disposing)
             {
-                SpriteBatch.Dispose();
-                _world.Dispose();
-				//GraphicsDevice.Dispose();
+				effect.Blur.Dispose();
+				effect.Combine.Dispose();
+				effect.Light.Dispose();
+				graphicsManager.Dispose();
+				renderTarget.BlurMap.Dispose();
+				renderTarget.ColorMap.Dispose();
+				renderTarget.LightMap.Dispose();
+                spriteBatch.Dispose();
+				tiledMapRenderer.Dispose();
+                world.Dispose();
+
+				Console.WriteLine("Effect.Dispose() => OK");
+				Console.WriteLine("GraphicsDevice.Dispose() => OK");
+				Console.WriteLine("RenderTarget.Dispose() => OK");
+				Console.WriteLine("SpriteBatch.Dispose() => OK");
+				Console.WriteLine("TiledMapRenderer.Dispose() => OK");
+				Console.WriteLine("virtualRenderTarget.Dispose() => OK");
+				Console.WriteLine("World.Dispose() => OK");
             }
 
             _isDisposed = true;
         }
 
-        ~Retroherz()
-        {
-            this.Dispose(false);
-        }
+        ~Retroherz() => this.Dispose(false);
     }
 }

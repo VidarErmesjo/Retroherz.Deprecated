@@ -1,6 +1,9 @@
+using System;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
+using MonoGame.Extended.Collections;
 using MonoGame.Extended.Entities;
 using MonoGame.Extended.Entities.Systems;
 
@@ -18,12 +21,12 @@ namespace Retroherz.Systems
 		private ComponentMapper<PlayerComponent> _playerComponentMapper;
 		private ComponentMapper<TransformComponent> _transformComponentMapper;
 
-		public HUDSystem(GraphicsDevice graphicsDevice, OrthographicCamera camera, InputManager inputManager)
+		public HUDSystem(OrthographicCamera camera, InputManager inputManager, SpriteBatch spriteBatch)
 			: base(Aspect.All(typeof(ColliderComponent), typeof(PlayerComponent), typeof(TransformComponent)))
 		{
 			_camera = camera;
 			_inputManager = inputManager;
-			_spriteBatch = new(graphicsDevice);
+			_spriteBatch = spriteBatch;
 		}
 
 		public override void Initialize(IComponentMapperService mapperService)
@@ -47,7 +50,7 @@ namespace Retroherz.Systems
 				if (_inputManager.State != InputManagerState.Idle)
 					_spriteBatch.DrawRectangle(_inputManager.Selection, Color.White);
 
-				foreach (var playerId in ActiveEntities)
+				foreach (int playerId in ActiveEntities.AsReadOnlySpan())
 				{
 					var player = _playerComponentMapper.Get(playerId) ?? throw new($"HUDSystem():{playerId} == null");
 

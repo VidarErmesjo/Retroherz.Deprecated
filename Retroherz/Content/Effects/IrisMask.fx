@@ -22,6 +22,6 @@ technique IrisMask
 {
 	pass P0
 	{
-    	PixelShader=compile ps_4_0_level_9_1 IrisMask();
+    	PixelShader = compile PS_SHADERMODEL IrisMask();
 	}
 }

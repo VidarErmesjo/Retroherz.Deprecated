@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 using Microsoft.Xna.Framework;
@@ -13,6 +14,7 @@ using MonoGame.Extended.Tiled;
 using MonoGame.Extended.Tiled.Renderers;
 
 using Retroherz.Components;
+using Retroherz.Math;
 
 namespace Retroherz.Systems
 {
@@ -34,7 +36,7 @@ namespace Retroherz.Systems
 		public override string ToString() => "{" + $"X:{X} Y:{Y} Layer:{Layer}" + "}";
 	}
 
-    public partial class TiledMapSystem : EntityUpdateSystem, IDrawSystem
+    public partial class TiledMapSystem : EntityUpdateSystem
     {
 		private bool _isDisposed = false;
 
@@ -46,12 +48,14 @@ namespace Retroherz.Systems
 		private ComponentMapper<ColliderComponent> _colliderComponentMapper;
 		private ComponentMapper<TransformComponent> _transformComponentMapper;
 
-        public TiledMapSystem(TiledMap tiledMap, GraphicsDevice graphics, OrthographicCamera camera)
+		public static bool TiledMapDidUpdate = false;
+
+        public TiledMapSystem(OrthographicCamera camera, TiledMap tiledMap, TiledMapRenderer tiledMapRenderer)
 			: base(Aspect.All(typeof(ColliderComponent), typeof(TransformComponent)))
         {
 			_camera = camera;
 			_tiledMap = tiledMap;
-			_tiledMapRenderer = new(graphics, tiledMap);
+			_tiledMapRenderer = tiledMapRenderer;
 			_tiles = new(tiledMap.Width * tiledMap.Height);
         }
 
@@ -93,49 +97,20 @@ namespace Retroherz.Systems
 
         public override void Update(GameTime gameTime)
         {
-			foreach (var entityId in ActiveEntities)
+			foreach (int entityId in ActiveEntities.AsReadOnlySpan())
 				RestrictMovementToTiledMap(entityId);
 
 			// Remove tile if entity was destroyed (sync entities and map)
-			foreach (var tile in _tiles)
+			foreach (Tile tile in _tiles.ToArray().AsSpan())
 				if (!ActiveEntities.Contains(tile.Id))
 				{
 					this.RemoveTile(tile);
 					this.ReloadMap();
 					_tiles.Remove(tile);
+					TiledMapDidUpdate = true;	// Or some event
 				}
 
 			_tiledMapRenderer.Update(gameTime);
         }
-
-        public void Draw(GameTime gameTime)
-        {
-			_tiledMapRenderer.Draw(_camera.GetViewMatrix());
-		}
-
-		public new void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        public virtual void Dispose(bool disposing)
-        {
-            if(_isDisposed)
-                return;
-
-            if(disposing)
-            {
-                _tiledMapRenderer.Dispose();
-            }
-
-            _isDisposed = true;
-        }
-
-
-        ~TiledMapSystem()
-		{
-			this.Dispose(false);
-		}
     }
 }

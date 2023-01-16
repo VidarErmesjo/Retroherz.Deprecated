@@ -5,7 +5,7 @@ namespace Retroherz
 {
 	public static class EntityManager
 	{
-		private static readonly Bag<int> _entities;
+		private static readonly Bag<int> _entities = new();
 		private static World _world;
 
 		public static bool Contains(int element) => _entities.Contains(element);

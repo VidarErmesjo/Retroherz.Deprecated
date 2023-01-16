@@ -24,7 +24,7 @@ public partial class ColliderSystem
 	{
 		Vector contactPoint = Vector.Zero;
 		Vector contactNormal = Vector.Zero;
-		double contactTime = 0;
+		float contactTime = 0;
 
 		if (Collides(
 			subject,
@@ -38,7 +38,7 @@ public partial class ColliderSystem
 			// - VE
 			if (contactNormal == Vector.Zero && subject.collider.Contacts.Count == 1)
 			{
-				contactNormal = Vector2.Clamp(-subject.collider.Velocity, -Vector.One, Vector.One);
+				contactNormal = Vector.Clamp(-subject.collider.Velocity, -Vector.One, Vector.One);
 				System.Console.WriteLine("Diagonal!");
 			}
 

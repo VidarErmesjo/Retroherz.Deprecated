@@ -10,12 +10,14 @@ using MonoGame.Extended.Entities;
 using MonoGame.Extended.Entities.Systems;
 
 using Retroherz.Components;
+using Retroherz.Managers;
 using Retroherz.Math;
 
 namespace Retroherz.Systems;
 
 public class PlayerSystem : EntityProcessingSystem
 {
+	private readonly AssetsManager _assetsManager;
 	private readonly OrthographicCamera _camera;
 	private readonly InputManager _inputManager;
 
@@ -24,7 +26,9 @@ public class PlayerSystem : EntityProcessingSystem
 	private ComponentMapper<SpriteComponent> _spriteComponentMapper;
 	private ComponentMapper<TransformComponent> _transformComponentMapper;
 
-	public PlayerSystem(OrthographicCamera camera, InputManager inputManager)
+	//private Entity _player;
+
+	public PlayerSystem(AssetsManager assetsManager, OrthographicCamera camera, InputManager inputManager)
 		: base(Aspect
 			.All(
 				typeof(ColliderComponent),
@@ -32,6 +36,7 @@ public class PlayerSystem : EntityProcessingSystem
 				typeof(SpriteComponent),
 				typeof(TransformComponent)))
 	{
+		_assetsManager = assetsManager;
 		_camera = camera;
 		_inputManager = inputManager;
 	}
@@ -42,10 +47,24 @@ public class PlayerSystem : EntityProcessingSystem
 		_playerComponentMapper = mapperService.GetMapper<PlayerComponent>();
 		_spriteComponentMapper = mapperService.GetMapper<SpriteComponent>();
 		_transformComponentMapper = mapperService.GetMapper<TransformComponent>();
+
+		// CreatePlayer()
+		/*Vector2 position = Vector2.One * 16 * 7;
+		position.Y += 9;
+		Vector2 size = new(32, 32);
+
+		_player = CreateEntity();
+		_player.Attach(new MetaComponent(id: _player.Id, type: MetaComponentType.Player));
+		_player.Attach(new PlayerComponent());
+		_player.Attach(new SpriteComponent(asepriteDocument: _assetsManager.Sprite("Shitsprite")));
+		_player.Attach(new TransformComponent(position: position));
+		_player.Attach(new ColliderComponent(size: size, type: ColliderComponentType.Dynamic));
+		_player.Attach(new RayComponent(radius: 64));*/
 	}
 
 	public override void Process(GameTime gameTime, int entityId)
 	{
+
 		var deltaTime = gameTime.GetElapsedSeconds();
 
 		var mouseState = _inputManager.CurrentMouseState;// Mouse.GetState();
@@ -72,12 +91,12 @@ public class PlayerSystem : EntityProcessingSystem
 				direction.Normalize();
 
 			// Important! Must check if is NaN
-			if(direction.IsNaN()) direction = Vector.Zero;
+			if(direction.IsNaN()) direction = Vector2.Zero;
 
 			collider.Velocity += direction * player.MaxSpeed * deltaTime * 2;
 
 			/* if (keyboardState.IsKeyDown(Keys.Space))
-				collider.Velocity = new Vector(collider.Velocity.X, -100f);*/
+				collider.Velocity = new Vector2(collider.Velocity.X, -100f);*/
 
 			sprite.Play("Walk");
 		}
@@ -89,7 +108,7 @@ public class PlayerSystem : EntityProcessingSystem
 
 			collider.Velocity += direction * player.MaxSpeed * deltaTime;
 			
-			/*collider.Velocity = new Vector((
+			/*collider.Velocity = new Vector2((
 				MathHelper.Clamp(collider.Velocity.X, -player.MaxSpeed, player.MaxSpeed)),
 				MathHelper.Clamp(collider.Velocity.Y, -player.MaxSpeed, player.MaxSpeed));*/
 
@@ -99,10 +118,10 @@ public class PlayerSystem : EntityProcessingSystem
 			sprite.Play("Idle");
 
 		// Exp.
-		//collider.Size += Vector.One * deltaTime;
+		//collider.Size += Vector2.One * deltaTime;
 		//collider.Size = new(32, 32);
 		// Update position if size has changed
-		/*if (collider.DeltaOrigin != Vector.Zero)
+		/*if (collider.DeltaOrigin != Vector2.Zero)
 			transform.Position += -collider.DeltaOrigin;*/
 	}
 }

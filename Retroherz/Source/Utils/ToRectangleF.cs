@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
+using Retroherz.Math;
 
 namespace Retroherz
 {
