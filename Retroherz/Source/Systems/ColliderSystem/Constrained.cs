@@ -57,7 +57,7 @@ public partial class ColliderSystem
 				size: obstacle.collider.Size + subject.collider.Size,
 				velocity: obstacle.collider.Velocity,
 				type: obstacle.collider.Type),
-			new(position: obstacle.transform.Position - subject.collider.Origin));
+			new(position: obstacle.transform.Position - subject.collider.HalfExtents));
 
 		// Cast rays
 		foreach (var ray in subject.collider.Rays)

@@ -17,10 +17,10 @@ internal class Predictive
 			Point2 center = (
 				(transform.Position) +
 				(collider.Type == ColliderComponentType.Dynamic ? collider.Velocity * deltaTime : Vector.Zero) + 
-				(margin ? collider.Size : collider.Origin)
+				(margin ? collider.Size : collider.HalfExtents)
 			);
 
-			Size2 halfExtents = collider.Origin;
+			Size2 halfExtents = collider.HalfExtents;
 
 			return new(center, halfExtents);
 		}

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoGame.Extended;
+using MonoGame.Extended.Collections;
 using MonoGame.Extended.ViewportAdapters;
 
 namespace Retroherz.Managers;
@@ -29,9 +30,14 @@ public class GraphicsManager : SimpleGameComponent, IDisposable
 {
 	private bool _isDisposed;
 
+	private OrthographicCamera _camera;
+	private readonly Dictionary<string, Effect> _effects = new();
 	private readonly GraphicsDeviceManager _graphicsDeviceManager;
 	private bool _isFullScreen;
 	private RenderTarget2D _renderTarget;
+	private readonly Size _renderTargetResolution;
+	private readonly Dictionary<string, RenderTarget2D> _renderTargets = new();
+	private SpriteBatch _spriteBatch;
 	private readonly Size _virtualResolution;
 	private BoxingViewportAdapter _viewportAdapter;
 	public Size _viewportResolution;
@@ -77,6 +83,11 @@ public class GraphicsManager : SimpleGameComponent, IDisposable
 		// Calculate the viewport (internal) resolution
 		var displayModeInfo = DisplayModes[((ushort)displayMode)];
 
+		_renderTargetResolution = new Size(
+			((int)displayModeInfo.Resolution.Width),
+			((int)displayModeInfo.Resolution.Height)
+		);
+
 		_virtualResolution = new Size(
 			((int)(displayModeInfo.Resolution.Width / (scale ? displayModeInfo.ScaleFactor.Width : 1))),
 			((int)(displayModeInfo.Resolution.Height / (scale ? displayModeInfo.ScaleFactor.Height : 1)))
@@ -88,9 +99,26 @@ public class GraphicsManager : SimpleGameComponent, IDisposable
 	public void SetIsFullScreen(bool isFullScreen) => this._isFullScreen = isFullScreen;
 
 	/// <summary>
-	///	Initializes the game manager and outputs the camera and graphics device.
+	///	Initializes the game manager and outputs the camera and the graphics device.
 	/// </summary>
 	public void Initialize(out OrthographicCamera camera, out GraphicsDevice graphics)
+	{
+		graphics = Initialize();
+		camera = _camera;
+	}
+
+	/// <summary>
+	///	Initializes the game manager and outputs the graphics device.
+	/// </summary>
+	public void Initialize(out GraphicsDevice graphics)
+	{
+		graphics = Initialize();
+	}
+
+	/// <summary>
+	///	Initializes the game manager and returns the graphics device.
+	/// </summary>
+	public new GraphicsDevice Initialize()
 	{
 		//this.Game.Window.ClientSizeChanged() += OnChange();
 
@@ -114,6 +142,8 @@ public class GraphicsManager : SimpleGameComponent, IDisposable
 		_graphicsDeviceManager.ApplyChanges();
 		_graphicsDeviceManager.HardwareModeSwitch = true;
 
+		_spriteBatch = new(_graphicsDeviceManager.GraphicsDevice);
+
 		this.DestinationRectangle = new Rectangle(
 			0,
 			0,
@@ -121,10 +151,11 @@ public class GraphicsManager : SimpleGameComponent, IDisposable
 			_viewportResolution.Height
 		);
 
+		// EXP: Render to viewport scale
 		_renderTarget = new RenderTarget2D(
 			_graphicsDeviceManager.GraphicsDevice,
-			_virtualResolution.Width,
-			_virtualResolution.Height,
+			_renderTargetResolution.Width,//_viewportResolution.Width,//_virtualResolution.Width,
+			_renderTargetResolution.Height,//_viewportResolution.Height,//_virtualResolution.Height,
 			false,
 			SurfaceFormat.Color,
 			DepthFormat.None,
@@ -138,15 +169,56 @@ public class GraphicsManager : SimpleGameComponent, IDisposable
 			_virtualResolution.Width,
 			_virtualResolution.Height
 		);
+	
+		_camera = new(_viewportAdapter);
 
-		camera = new(_viewportAdapter);
-		graphics = _graphicsDeviceManager.GraphicsDevice;
+		return _graphicsDeviceManager.GraphicsDevice;
 	}
 
 	public override void Update(GameTime gameTime)
 	{
 		// if (_isFullScreen) ... handle change?
 
+	}
+
+	public RenderTarget2D CreateRenderTarget(
+		string name,
+		bool mipMap,
+		SurfaceFormat preferredFormat,
+		DepthFormat preferredDepthFormat,
+		int preferredMultiSampleCount,
+		RenderTargetUsage usage
+	)
+	{
+		_renderTargets.Add(name.ToLower(), new RenderTarget2D(
+				graphicsDevice: _graphicsDeviceManager.GraphicsDevice,
+				width: _renderTargetResolution.Width,//_virtualResolution.Width,
+				height: _renderTargetResolution.Height,//_virtualResolution.Height,
+				mipMap: mipMap,
+				preferredFormat: preferredFormat,
+				preferredDepthFormat: preferredDepthFormat,
+				preferredMultiSampleCount: preferredMultiSampleCount,
+				RenderTargetUsage.DiscardContents
+			)
+		);
+
+		return _renderTargets[name.ToLower()];
+	}
+
+	private const string INIT_ERROR = "GraphicsManager must be initialized.";
+	private Exception NotInitializedException = new InvalidOperationException(INIT_ERROR);
+
+	public OrthographicCamera GetCamera() => _camera ?? throw NotInitializedException;
+	public Effect GetEffect(string name) => _effects[name.ToLower()];
+	public GraphicsDevice GetGraphicsDevice() => _graphicsDeviceManager.GraphicsDevice ?? throw NotInitializedException;
+	public SpriteBatch GetSpriteBatch() => _spriteBatch ?? throw NotInitializedException;
+	public RenderTarget2D GetRenderTarget(string name) => _renderTargets[name.ToLower()];
+
+	public Effect RegisterEffect(Effect effect)
+	{
+		string name = effect.Name.Split("/",2)[1].ToLower();
+		_effects.Add(name, effect);
+		return _effects[name];
 	}
 
 	public override string ToString() => $"Viewport:{ViewportResolution} Virtual:{VirtualResolution} RenderTarget:{RenderTarget.Bounds} DestinationRectangle:{DestinationRectangle}";
@@ -212,8 +284,16 @@ public class GraphicsManager : SimpleGameComponent, IDisposable
 
 		if(disposing)
 		{
+			foreach (Effect effect in _effects.Values)
+				effect?.Dispose();
+
 			_graphicsDeviceManager.Dispose();
+			_spriteBatch?.Dispose();
 			_renderTarget.Dispose();
+
+			foreach (RenderTarget2D renderTarget in _renderTargets.Values)
+				renderTarget?.Dispose();
+
 			_viewportAdapter.Dispose();
 
 			Console.WriteLine("GraphicsManager.Dispose() => OK");

@@ -102,12 +102,12 @@ public class DebugSystem : EntityDrawSystem, IDisposable
 				// Rays
 				_spriteBatch.DrawLine(
 					origin,
-					transform.Position + collider.Origin,
+					transform.Position + collider.HalfExtents,
 					Color.BlueViolet);
 
 				// Inflated
 				_spriteBatch.DrawRectangle(
-					contact.Obstacle.transform.Position - entity.collider.Origin,
+					contact.Obstacle.transform.Position - entity.collider.HalfExtents,
 					contact.Obstacle.collider.Size + entity.collider.Size,
 					Color.BlueViolet);
 				
@@ -133,12 +133,12 @@ public class DebugSystem : EntityDrawSystem, IDisposable
 				// Rays
 				_spriteBatch.DrawLine(
 					origin,
-					transform.Position + collider.Origin,
+					transform.Position + collider.HalfExtents,
 					Color.BlueViolet);
 
 				// Inflated
 				_spriteBatch.DrawRectangle(
-					transform.Position - entity.collider.Origin,
+					transform.Position - entity.collider.HalfExtents,
 					collider.Size + entity.collider.Size,
 					Color.BlueViolet);
 				

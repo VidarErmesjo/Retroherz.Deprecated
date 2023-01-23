@@ -42,6 +42,7 @@ namespace Retroherz.Systems
 
         public override void Process(GameTime gameTime, int entityId)
         {
+			float deltaTime = gameTime.GetElapsedSeconds();
 			var player = _playerComponentMapper.Get(entityId);
 
 			var collider = _colliderComponentMapper.Get(entityId);
@@ -51,7 +52,9 @@ namespace Retroherz.Systems
 			var min = new Vector2(_camera.BoundingRectangle.Width, _camera.BoundingRectangle.Height) / 2;
 			var max = new Vector2(_tiledMap.WidthInPixels, _tiledMap.HeightInPixels) - min;
 
-			var lookAt = Vector2.Clamp(transform.Position + collider.Origin, min, max);
+			var origin = transform.Position + collider.HalfExtents;
+
+			var lookAt = Vector2.Clamp(origin, min, max);
 			_camera.LookAt(lookAt);
         }
     }

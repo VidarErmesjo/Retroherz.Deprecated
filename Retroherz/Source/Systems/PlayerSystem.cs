@@ -104,7 +104,7 @@ public class PlayerSystem : EntityProcessingSystem
 		{
 			// Accelerate
 			direction = Vector2.Normalize(_camera.ScreenToWorld(
-				new(mouseState.X, mouseState.Y)) - (transform.Position - collider.Origin));
+				new(mouseState.X, mouseState.Y)) - (transform.Position - collider.HalfExtents));
 
 			collider.Velocity += direction * player.MaxSpeed * deltaTime;
 			

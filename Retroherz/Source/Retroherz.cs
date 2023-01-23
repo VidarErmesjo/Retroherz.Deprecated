@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +24,7 @@ using Retroherz.Components;
 using Retroherz.Systems;
 using Retroherz.Managers;
 using Retroherz.Math;
+using Retroherz.Visibility;
 
 // RetroHerzen ???
 // Erm ???
@@ -39,6 +41,7 @@ namespace Retroherz
 	
 		readonly AssetsManager assetsManager;
 		readonly GraphicsManager graphicsManager;
+		readonly VisibilityComputer visibilityComputer;
 
 		InputManager inputManager;
 		OrthographicCamera camera;
@@ -56,6 +59,7 @@ namespace Retroherz
         {
 			assetsManager = new(Content);
 			graphicsManager = new(this, mode, fullscreen, scale);
+			visibilityComputer = VisibilityComputer.GetInstance();
         }
 
         protected override void LoadContent()
@@ -67,28 +71,26 @@ Unhandled exception. Microsoft.Xna.Framework.Content.ContentLoadException: The c
  ---> System.IO.FileNotFoundException: Could not find file 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Retroherz\bin\Debug\net7.0-windows\Content\Tiled\Shitbrick.xnb'.
 File name: 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Retroherz\bin\Debug\net7.0-windows\Content\Tiled\Shitbrick.xnb'
 */
-			// Load effects
-            effect.Blur = assetsManager.Effect("Blur");
-			effect.Combine = assetsManager.Effect("Combine");
-            effect.Light = assetsManager.Effect("Light");
+			// Load and register effects
+			effect.Blur = graphicsManager.RegisterEffect(assetsManager.Effect("Blur"));
+			effect.Combine = graphicsManager.RegisterEffect(assetsManager.Effect("Combine"));
+			effect.Light = graphicsManager.RegisterEffect(assetsManager.Effect("Light"));
 
             base.LoadContent();
         }
 
         public void CreatePlayer()
         {
-            Vector position = Vector.One * 16 * 7;
-			position.Y += 9;
+            Vector position = tiledMap.ObjectLayers[0].Objects[0].Position;
             Vector size = new(32, 32);
 
             var player = world.CreateEntity();
 			player.Attach(new MetaComponent(id: player.Id, type: MetaComponentType.Player));
             player.Attach(new PlayerComponent());
-			player.Attach(new PointLightComponent(lightEffect: effect.Light, radius: 128, color: Color.White));
+			player.Attach(new PointLightComponent(radius: 64, color: Color.CornflowerBlue));
             player.Attach(new SpriteComponent(asepriteDocument: assetsManager.Sprite("Shitsprite")));
             player.Attach(new TransformComponent(position: position));
             player.Attach(new ColliderComponent(size: size, type: ColliderComponentType.Dynamic));
-			player.Attach(new RayComponent(radius: 64));
 			player.Attach(new Collider { Velocity = Vector.Zero }); // :)
         }
 
@@ -126,6 +128,8 @@ File name: 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Re
 				actor.Attach(new TransformComponent(position: position));
 				actor.Attach(new ColliderComponent(velocity: velocity, size: size, type: ColliderComponentType.Dynamic));
 				actor.Attach(new RayComponent(radius: randomSize * 2));
+				actor.Attach(new PointLightComponent(radius: size.Magnitude() * 2, color: Color.CornflowerBlue));
+
 
 				tiles.Remove(tile);
 			}
@@ -134,47 +138,42 @@ File name: 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Re
         protected override void Initialize()
         {
             base.Initialize();
-			graphicsManager.Initialize(out camera, out graphics);
-			inputManager = new(camera);
-			spriteBatch = new(graphics);
-			tiledMapRenderer = new(graphics);
 
+			graphics = graphicsManager.Initialize();
 			Console.WriteLine($"{graphicsManager}");
 
+			camera = graphicsManager.GetCamera();
+			spriteBatch = graphicsManager.GetSpriteBatch();
+			tiledMapRenderer = new(graphics);
+			inputManager = new(camera);
 
 			// Set up all render targets.
 			// The blur map does not need a depth buffer			
-			renderTarget.BlurMap = new(
-				graphics,
-				graphicsManager.VirtualResolution.Width,
-				graphicsManager.VirtualResolution.Height,
-				false,
-				SurfaceFormat.Color,
-				DepthFormat.None,
-				16,
-				RenderTargetUsage.DiscardContents
+			renderTarget.BlurMap = graphicsManager.CreateRenderTarget(
+				"Blur",
+				mipMap: false,
+				preferredFormat: SurfaceFormat.Color,
+				preferredDepthFormat: DepthFormat.None,
+				preferredMultiSampleCount: 16,
+				usage: RenderTargetUsage.DiscardContents	
 			);
 
-			renderTarget.ColorMap = new(
-				graphics,
-				graphicsManager.VirtualResolution.Width,
-				graphicsManager.VirtualResolution.Height,
-				false,
-				SurfaceFormat.Color,
-				DepthFormat.Depth16,
-				16,
-				RenderTargetUsage.DiscardContents
+			renderTarget.ColorMap = graphicsManager.CreateRenderTarget(
+				"Color",
+				mipMap: false,
+				preferredFormat: SurfaceFormat.Color,
+				preferredDepthFormat: DepthFormat.Depth16,
+				preferredMultiSampleCount: 16,
+				usage: RenderTargetUsage.DiscardContents	
 			);
 
-			renderTarget.LightMap = new(
-				graphics,
-				graphicsManager.VirtualResolution.Width,
-				graphicsManager.VirtualResolution.Height,
-				false,
-				SurfaceFormat.Color,
-				DepthFormat.Depth16,
-				16,
-				RenderTargetUsage.DiscardContents
+			renderTarget.LightMap = graphicsManager.CreateRenderTarget(
+				"Light",
+				mipMap: false,
+				preferredFormat: SurfaceFormat.Color,
+				preferredDepthFormat: DepthFormat.Depth16,
+				preferredMultiSampleCount: 16,
+				usage: RenderTargetUsage.DiscardContents	
 			);
 
 			tiledMapRenderer.LoadMap(tiledMap);
@@ -194,6 +193,11 @@ File name: 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Re
 
 			// SYSTEM
 			var query = new QueryDescription().WithAll<Transform>();
+
+			List<Arch.Core.Entity> ents = new();
+			ArchWorld.GetEntities(in query, ents);
+			Console.WriteLine($"GetEntities:{ents.Count} SizeOf:{Unsafe.SizeOf<Arch.Core.Entity>()}");
+
 			ArchWorld.Query(in query, (in Arch.Core.Entity entity) => {
 				entity.Set(new Transform(3, 3));
 				entity.Get<Transform>().Rotation = 4;
@@ -213,25 +217,26 @@ File name: 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Re
 
 			// Arch END
 
-			//ShadowsSystem shadowsSystem = new(camera, spriteBatch, tiledMap);
-			//shadowsSystem.CreatePolyMap(tiledMap);
+			//ShadowsSystem shadowsSystem = new(graphicsManager, tiledMap);
 
             world = new WorldBuilder()
 			    .AddSystem(new PlayerSystem(assetsManager, camera, inputManager))
 				.AddSystem(new CameraSystem(camera, tiledMap))
 				//.AddSystem(new VisibilitySystem(camera, effect, graphics, renderTarget, spriteBatch))
-				.AddSystem(new ShadowsSystem(camera, spriteBatch, tiledMap))
-                .AddSystem(new TiledMapSystem(camera, tiledMap, tiledMapRenderer))
+				.AddSystem(new TiledMapSystem(camera, tiledMap, tiledMapRenderer))
+                //.AddSystem(new TiledMapSystem(camera, tiledMap, tiledMapRenderer))
                 .AddSystem(new ExpirySystem())
-				.AddSystem(new SelectSystem(inputManager))
                 .AddSystem(new ColliderSystem())
-                //.AddSystem(new UpdateSystem(inputManager))
+                .AddSystem(new UpdateSystem(inputManager))
+				.AddSystem(new ShadowsSystem(graphicsManager, tiledMap))
                 .AddSystem(new RenderSystem(camera, effect, graphics, renderTarget, spriteBatch, tiledMapRenderer))
 				.AddSystem(new DebugSystem(camera, spriteBatch))
 				//.AddSystem(new MetaSystem())
+				//.AddSystem(new CameraSystem(camera, tiledMap))
+				.AddSystem(new SelectSystem(inputManager))
 				.AddSystem(new HUDSystem(camera, inputManager, spriteBatch))
                 .Build();
-            world.Initialize();
+            world.Initialize();			
 
 			//EntityManager.Initialize(World;);
             //Components.Add(World;);
@@ -242,13 +247,15 @@ File name: 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Re
 			//CreateActors(50);
 
 			var actor = world.CreateEntity();
-			actor.Attach(new TransformComponent(position: Vector.One * 16));
+			actor.Attach(new TransformComponent(position: Vector.One * 16 * 10));
+			var size = Vector.Clamp(Vector.One * Random.Shared.NextSingle() * 8, Vector.One * 8, Vector.One * 16);
 			actor.Attach(new ColliderComponent(
-				size: Vector.Clamp(Vector.One * Random.Shared.NextSingle() * 8, Vector.One * 8, Vector.One * 16),
+				size: size,
 				velocity: Vector.One * 16,
 				type: ColliderComponentType.Dynamic));
 			actor.Attach(new MetaComponent(id: actor.Id, type: MetaComponentType.NPC));
 			actor.Attach(new SpriteComponent(assetsManager.Sprite("Shitsprite")));
+			actor.Attach(new PointLightComponent(radius: size.Magnitude() * 4, color: Color.DarkGoldenrod));
         }
 
         protected override void Update(GameTime gameTime)
@@ -266,7 +273,7 @@ File name: 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Re
         protected override void Draw(GameTime gameTime)
         {
 			//graphics.SetRenderTarget(graphicsManager.RenderTarget); 
-			graphics.Clear(Color.Transparent);
+			//graphics.Clear(Color.Black);
 
 			world.Draw(gameTime);
 
@@ -274,12 +281,17 @@ File name: 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Re
 			graphics.Clear(Color.Black);
 
 			spriteBatch.Begin(
-				SpriteSortMode.Immediate,
-				BlendState.Opaque,
-				SamplerState.PointClamp
-				
+				sortMode: SpriteSortMode.Immediate,
+				blendState: BlendState.NonPremultiplied,
+				samplerState: SamplerState.PointClamp,
+				depthStencilState: DepthStencilState.None,
+				rasterizerState: RasterizerState.CullNone
 			);
-			spriteBatch.Draw(graphicsManager.RenderTarget, graphicsManager.DestinationRectangle, Color.White);
+			spriteBatch.Draw(
+				graphicsManager.RenderTarget,
+				graphicsManager.DestinationRectangle,
+				Color.White
+			);
 			spriteBatch.End();*/
         }
 

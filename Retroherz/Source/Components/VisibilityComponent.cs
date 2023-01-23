@@ -12,12 +12,10 @@ namespace Retroherz.Components;
 /// <summary>
 /// Point light that casts shadows
 /// </summary>
-public class PointLightComponent
+public class VisibilityComponent
 {
-	/// <summary>
-	///	Represents the renderable mesh of the influence of the light.
-	/// </summary>
-	public Primitive Primitive;
+	public VertexPositionTexture[] Vertices;
+	public short[] Indices;
 
 	/// <summary>
 	/// Radius of influence of the light.
@@ -35,7 +33,7 @@ public class PointLightComponent
 	/// </summary>
 	public float Power { get; set; }
 
-	public PointLightComponent(float radius, Color color, float power = 1)
+	public VisibilityComponent(float radius, Color color, float power = 1)
 	{
 		Radius = radius;
 		Color = color;

@@ -7,7 +7,7 @@ namespace Retroherz.Systems;
 // https://roy-t.nl/2014/02/27/2d-lighting-and-shadows-preview.html
 // http://roy-t.nl/files/ShadowsIn2D.zip
 
-public partial class VisibilitySystem
+public partial class ShadowsSystem
 {
 	/// <summary>
 	/// Internal component to render a quad without touching render states.

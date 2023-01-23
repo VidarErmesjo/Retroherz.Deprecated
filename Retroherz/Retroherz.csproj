@@ -3,6 +3,7 @@
 		<OutputType>Exe</OutputType>
 		<!-- <OutputType>WinExe</OutputType> -->
 		<TargetFramework>net7.0-windows</TargetFramework>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<RollForward>Major</RollForward>
 		<PublishReadyToRun>false</PublishReadyToRun>
 		<TieredCompilation>false</TieredCompilation>
@@ -13,7 +14,7 @@
 		<ApplicationIcon>Icon.ico</ApplicationIcon>
 	</PropertyGroup>
 	<ItemGroup>
-		<PackageReference Include="Arch" Version="1.1.1" />
+		<PackageReference Include="Arch" Version="1.1.6" />
 		<PackageReference Include="MonoGame.Framework.WindowsDX" Version="3.8.1.303" />
 		<PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.1.303" />
 		<PackageReference Include="MonoGame.Framework.Content.Pipeline" Version="3.8.1.303" />

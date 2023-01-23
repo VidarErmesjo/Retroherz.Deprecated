@@ -145,7 +145,7 @@ public partial class ColliderSystem : EntityUpdateSystem
 					deltaTime))
 				{					
 					// On collision... add it to contact information for resolves, effects, visuals etc.
-					(int, Vector, Vector, double) contact = new(
+					(int, Vector, Vector, float) contact = new(
 						candidateId,
 						contactPoint,
 						contactNormal,
@@ -201,7 +201,6 @@ public partial class ColliderSystem : EntityUpdateSystem
 						deltaTime))
 					{
 					}
-
 				}
 			}
 

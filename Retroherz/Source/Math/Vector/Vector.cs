@@ -190,6 +190,23 @@ public struct Vector : IEquatable<Vector>
 		}
 
 		/// <summary>
+		/// Returns the squared distance between vectors u and v.
+		/// </summary> 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static float DistanceSquared(Vector u, Vector v) => DistanceSquared(ref u, ref v);
+
+		/// <summary>
+		/// Returns the squared distance between vectors u and v.
+		/// </summary> 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		private static float DistanceSquared(ref Vector u, ref Vector v)
+		{
+			float dx = u.X - v.X;
+			float dy = u.Y - v.Y;
+			return dx * dx + dy * dy;
+		}
+
+		/// <summary>
 		/// Returns the dot product of vectors u and v.
 		/// </summary>    
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

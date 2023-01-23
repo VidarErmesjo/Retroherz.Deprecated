@@ -33,7 +33,7 @@ public partial class ColliderSystem
 				size: obstacle.collider.Size + subject.collider.Size,
 				velocity: obstacle.collider.Velocity,
 				type: obstacle.collider.Type),
-			new(position: obstacle.transform.Position - subject.collider.Origin));
+			new(position: obstacle.transform.Position - subject.collider.HalfExtents));
 
 		foreach (var ray in subject.collider.Rays)
 			if (Intersects(
@@ -52,7 +52,7 @@ public partial class ColliderSystem
 					System.Console.WriteLine("Diagonal!");
 				}*/
 
-				var force = contactNormal * subject.collider.DeltaOrigin;// * (1 - MathF.Abs(contactTime));
+				var force = contactNormal * subject.collider.DeltaHalfExtents;// * (1 - MathF.Abs(contactTime));
 				//force = contactNormal * Vector2.One;
 
 				subject.collider.Velocity += force;

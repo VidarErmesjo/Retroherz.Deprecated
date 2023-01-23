@@ -46,13 +46,13 @@ public static class VectorExtensions
 	/// <summary>
 	/// Returns the distance between vectors u and v.
 	/// </summary> 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	/*[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static float Distance(this Vector u, Vector v)
 	{
 		float dx = u.X - v.X;
 		float dy = u.Y - v.Y;
 		return MathF.Sqrt(dx * dx + dy * dy);
-	}
+	}*/
 
 	/// <summary>
 	/// Returns the dot product of vector u and v.

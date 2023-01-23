@@ -42,6 +42,17 @@ public partial class ColliderSystem
 				System.Console.WriteLine("Diagonal!");
 			}
 
+			// Dynamics ??
+			/*if (obstacle.collider.Type == ColliderComponentType.Dynamic) // obstacle.collider.Velocity != Vector.Zero
+			{
+					
+				var a = contactNormal * subject.collider.Velocity.Abs() * (1 - contactTime);
+				var b = contactNormal * obstacle.collider.Velocity.Abs() * (1 - contactTime);
+				var c = contactNormal * (subject.collider.Velocity.Abs() + obstacle.collider.Velocity.Abs()) * (1 - contactTime);
+
+				Console.WriteLine($"Vel A:{subject.collider.Velocity} Vel B:{obstacle.collider.Velocity} Force A:{a} Force B: {b} Force C:{c}");
+			}*/
+
 			// Displace
 			subject.collider.Velocity += contactNormal * subject.collider.Velocity.Abs() * (1 - contactTime);
 

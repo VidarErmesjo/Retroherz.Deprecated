@@ -25,21 +25,24 @@ public partial class ColliderSystem
 		float timeHitFar = 0;
 
 		// Ignore
-		if (subject.collider.Type == ColliderComponentType.Static) return false;
+		//if (subject.collider.Type == ColliderComponentType.Static) return false;
 
 		// Check if subject is actually moving and not changing size
-		if (subject.collider.Velocity == Vector.Zero && subject.collider.DeltaOrigin == Vector.Zero) return false;
+		if (subject.collider.Velocity == Vector.Zero && subject.collider.DeltaHalfExtents == Vector.Zero) return false;
 
 		// Calculate ray Vector
 		Ray ray = new(
-			subject.transform.Position + subject.collider.Origin,
-			subject.collider.Velocity * deltaTime);
+			origin: subject.transform.Position + subject.collider.HalfExtents,
+			direction: subject.collider.Velocity * deltaTime);
 
 		// Expand obstacle collider rectangle by subject dimensions
 		(Vector Position, Vector Size) rectangle = new(
-			obstacle.transform.Position - subject.collider.Origin,
+			obstacle.transform.Position - subject.collider.HalfExtents,
 			obstacle.collider.Size + subject.collider.Size
 		);
+
+		if (obstacle.collider.Velocity != Vector.Zero)
+			System.Console.WriteLine(obstacle.collider.Velocity);
 
 		// EXP
 		//rectangle.collider.Size += obstacle.collider.DeltaSize;// + subject.collider.DeltaSize;

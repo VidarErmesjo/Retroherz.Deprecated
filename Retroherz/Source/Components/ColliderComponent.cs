@@ -83,12 +83,12 @@ public class ColliderComponent
 	private Vector _previousSize = default(Vector);
 
 	public readonly Bag<Constraint> Constraints = new();
-	public readonly Bag<(int Id, Vector ContactPoint, Vector ContactNormal, double ContactTime)> Contacts = new();
+	public readonly Bag<(int Id, Vector ContactPoint, Vector ContactNormal, float ContactTime)> Contacts = new();
 
 	public (Vector Position, Vector Direction)[] Rays = new (Vector, Vector)[4];
 
 	public Vector Velocity { get; set; }
-	public Vector Origin { get => Size / 2; }
+	public Vector HalfExtents { get => Size / 2; }
 
 	public Vector Size
 	{
@@ -106,7 +106,7 @@ public class ColliderComponent
 		private set => _previousSize = Vector.Clamp(value, Vector.One, value);
 	}
 
-	public Vector DeltaOrigin { get => DeltaSize / 2; }
+	public Vector DeltaHalfExtents { get => DeltaSize / 2; }
 
 	public ColliderComponentType Type { get; set; }
 

@@ -14,7 +14,7 @@ using Retroherz.Math;
 
 namespace Retroherz.Systems;
 
-public partial class RenderSystem : EntityDrawSystem, IUpdateSystem
+public partial class RenderSystem : EntityDrawSystem
 {
 	private readonly OrthographicCamera _camera;
 	private readonly (Effect Blur, Effect Combine, Effect Light) _effect;
@@ -59,39 +59,17 @@ public partial class RenderSystem : EntityDrawSystem, IUpdateSystem
 		_transformComponentMapper = mapperService.GetMapper<TransformComponent>();
 	}
 
-	public void Update(GameTime gameTime)
-	{
-		float deltaTime = gameTime.GetElapsedSeconds();
-
-		foreach (int entityId in ActiveEntities.AsReadOnlySpan())
-		{
-			var collider = _colliderComponentMapper.Get(entityId);
-			var sprite = _spriteComponentMapper.Get(entityId);
-			var transform = _transformComponentMapper.Get(entityId);
-
-			// Update position
-			transform.Position += collider.Velocity * deltaTime;
-
-			//transform.Position += -collider.DeltaOrigin;
-			
-			// Update sprite
-			sprite.Scale = collider.Size;
-			sprite.Position = transform.Position;
-			sprite.Update(gameTime);
-		}
-	}
-
 	public override void Draw(GameTime gameTime)
 	{
 		float deltaTime = gameTime.GetElapsedSeconds();
 
 		// Sprites
 		_spriteBatch.Begin(
-			sortMode: SpriteSortMode.FrontToBack,
+			//sortMode: SpriteSortMode.BackToFront,
 			blendState: BlendState.Additive,
 			samplerState: SamplerState.PointClamp,
 			transformMatrix: _camera.GetViewMatrix()
-		); 
+		);
 
 
 		foreach(int entityId in ActiveEntities.AsReadOnlySpan())
