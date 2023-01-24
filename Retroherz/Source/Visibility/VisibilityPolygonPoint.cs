@@ -10,6 +10,12 @@ internal struct VisibilityPolygonPoint
 	public required float Theta { get; set; }
 	public required Vector Position { get; set; }
 
+	public VisibilityPolygonPoint(Vector position, float theta)
+	{
+		Position = position;
+		Theta = theta;
+	}
+
 	///	<summary>
 	///	Returns a slice of span containing no "duplicates".
 	///	</summary>
@@ -40,6 +46,8 @@ internal struct VisibilityPolygonPoint
 
 		return visibilityPolygonPoints.Slice(0, k);
 	}
+
+	public override string ToString() => "{" + $"Position:{Position} Theta:{Theta}" + "}";
 }
 
 // Custom comparer for the class

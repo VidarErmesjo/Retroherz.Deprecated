@@ -285,6 +285,9 @@ public struct Vector : IEquatable<Vector>
 		/// <summary>
 		/// Returns the HashCode of the vector.
 		/// </summary>
+		/// <returns>
+		///	A 32-bit signed integer that is the hash code for this instance.
+		///	</returns>
 		public override int GetHashCode() => (X, Y).GetHashCode();
 
 		/// <summary>

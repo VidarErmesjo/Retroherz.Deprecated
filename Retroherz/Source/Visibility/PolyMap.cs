@@ -4,10 +4,13 @@ using System.Runtime.CompilerServices;
 using Retroherz.Math;
 namespace Retroherz.Visibility;
 
-public struct PolyMap
+public struct PolyMap// : IComparable<PolyMap>
 {
 	public Vector Start;
 	public Vector End;
+	//public Vector[] Segment = new Vector[2];
+
+	//public Memory<Vector> s;
 
 	public PolyMap(Vector start, Vector end)
 	{

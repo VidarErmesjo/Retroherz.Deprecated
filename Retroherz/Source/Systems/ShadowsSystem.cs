@@ -11,6 +11,7 @@ using MonoGame.Extended.Shapes;
 using MonoGame.Extended.Tiled;
 using MonoGame.Extended.VectorDraw;
 using Retroherz.Components;
+using Retroherz.Collections;
 using Retroherz.Managers;
 using Retroherz.Math;
 using Retroherz.Visibility;
@@ -34,13 +35,11 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 	private ComponentMapper<SpriteComponent> _spriteComponentMapper;
 	private ComponentMapper<TransformComponent> _transformComponentMapper;
 
-	//private VisibilityComputer _visibiltyComputer;
-
-	public Bag<int> Occluders = new();
-	public Bag<int> Illumers = new();
+	public SpanBag<int> Occluders = new();
+	public SpanBag<int> Illumers = new();
 
 	public ShadowsSystem(GraphicsManager graphicsManager, TiledMap tiledMap)
-		: base(Aspect.All(typeof(ColliderComponent), typeof(TransformComponent)))
+		: base(Aspect.All(typeof(ColliderComponent), typeof(SpriteComponent), typeof(TransformComponent)))
 	{
 		_camera = graphicsManager.GetCamera();
 		_destinationRectangle = graphicsManager.DestinationRectangle;
@@ -72,16 +71,6 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 		// "Query"
 		foreach (int entityId in ActiveEntities.AsReadOnlySpan())
 		{
-			if (_spriteComponentMapper.Get(entityId) is null)
-				continue;
-
-			/*(ColliderComponent Collider, TransformComponent Transform) occluder = (
-				_colliderComponentMapper.Get(entityId),
-				_transformComponentMapper.Get(entityId)
-			);
-
-			VisibilityComputer.AddOccluder(new RectangleF(occluder.Transform.Position, occluder.Collider.Size));*/
-
 			Occluders.Add(entityId);
 
 			if (_pointLightComponentMapper.Get(entityId) is null)
@@ -90,9 +79,8 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 			Illumers.Add(entityId);
 		}
 
-		//Console.WriteLine($"Illumers:{Illumers.Count} Occluders:{Occluders.Count}");
-
-		foreach (int illumerId in Illumers.AsReadOnlySpan())
+		// Process "illumer".
+		foreach (int illumerId in Illumers)
 		{
 			(ColliderComponent Collider, PointLightComponent Light, TransformComponent Transform) illumer = (
 				_colliderComponentMapper.Get(illumerId),
@@ -100,35 +88,13 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 				_transformComponentMapper.Get(illumerId)
 			);
 
-			// IDEA!
-			// Pick "collider" entities by rectangle-circle intersections (radius)
-
-			/*_visibiltyComputer = new VisibilityComputer(
-				illumer.Transform.Position + illumer.Collider.HalfExtents,
-				illumer.Light.Radius
-			);*/
-
-			/*foreach (int occluderId in Occluders.AsReadOnlySpan())
-			{
-				if (occluderId == illumerId)
-					continue;
-
-				(ColliderComponent Collider, TransformComponent Transform) occluder = (
-					_colliderComponentMapper.Get(occluderId),
-					_transformComponentMapper.Get(occluderId)
-				);
-
-				VisibilityComputer.AddOccluder(new RectangleF(occluder.Transform.Position, occluder.Collider.Size));
-			}*/
-
-
 			_visibilityComputer.SetIllumer(
 				illumer.Transform.Position + illumer.Collider.HalfExtents,
 				illumer.Light.Radius
 			);
-			//_visibilityComputer.AddOccluder(new RectangleF(illumer.Transform.Position, illumer.Collider.Size));
 
-			foreach (int occluderId in Occluders.AsReadOnlySpan())
+			// Add "occluders".
+			foreach (int occluderId in Occluders)
 			{
 				if (occluderId == illumerId)
 					continue;
@@ -140,38 +106,12 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 
 				_visibilityComputer.AddOccluder(new RectangleF(occluder.Transform.Position, occluder.Collider.Size));
 			}
-			
-			/*ReadOnlySpan<Vector> points = VisibilityExtensions.PolyMap.CalculateVisibilityPolygon(
-				illumer.Transform.Position + illumer.Collider.HalfExtents,
-				illumer.Light.Radius		
-			);*/
 
 			ReadOnlySpan<Vector> points = _visibilityComputer.CalculateVisibilityPolygon();
-
-			/*ReadOnlySpan<Vector> points = _tiledMap.CreatePolyMap()
-				.CalculateVisibilityPolygon(
-					illumer.Transform.Position + illumer.Collider.HalfExtents
-					, illumer.Light.Radius
-				);*/
-
 
 			illumer.Light.Primitive = new Primitive()
 				.CreateTriangleFan(points, illumer.Transform.Position + illumer.Collider.HalfExtents)
 				.ProjectToScreen(_camera);
-
-			/*ReadOnlySpan<Vector> list = VisibilityComputer.Compute(
-				illumer.Transform.Position + illumer.Collider.HalfExtents,
-				illumer.Light.Radius
-			);*/
-
-			/*Span<Vector> vertices = new Vector[list.Count];
-
-			for (int i = 0; i < vertices.Length; i++)
-				vertices[i] = list[i];*/
-
-			/*illumer.Light.Primitive = new Primitive()
-				.CreateTriangleFan(vertices, illumer.Transform.Position + illumer.Collider.HalfExtents)
-				.ProjectToScreen(_camera);*/
 		}
 	}
 
@@ -207,7 +147,7 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 		_graphics.DepthStencilState = DepthStencilState.None;
 		_graphics.RasterizerState = RasterizerState.CullNone;
 
-		foreach (int illumerId in Illumers.AsReadOnlySpan())
+		foreach (int illumerId in Illumers)
 		{
 			(ColliderComponent Collider, PointLightComponent Light, TransformComponent Transform) illumer = (
 				_colliderComponentMapper.Get(illumerId),
