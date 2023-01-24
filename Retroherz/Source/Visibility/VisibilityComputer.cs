@@ -5,6 +5,7 @@ using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGame.Extended.Collections;
 using MonoGame.Extended.Tiled;
+using Retroherz.Collections;
 using Retroherz.Math;
 
 namespace Retroherz.Visibility;
@@ -45,10 +46,9 @@ public class Occluder
 public sealed class VisibilityComputer
 {
 	#region Private Fields
-	private ReadOnlyMemory<PolyMap> _tiledMap;
-	private Memory<PolyMap> _occluders;
-	private Memory<PolyMap> _edges;
-	private int _numEdges = 0;
+	private SpanBag<PolyMap> _tiledMap;
+	private SpanBag<PolyMap> _occluders;
+	private SpanBag<VisibilityPolygonPoint> _visibilityPolygonPoints;
 
 	private Illumer _illumer;
 
@@ -59,7 +59,11 @@ public sealed class VisibilityComputer
 		() => new VisibilityComputer()
 	);
 
-	private VisibilityComputer() {}
+	private VisibilityComputer()
+	{
+		_occluders = new SpanBag<PolyMap>(100);
+		_visibilityPolygonPoints = new SpanBag<VisibilityPolygonPoint>(1000);
+	}
 
 	public static VisibilityComputer GetInstance() => lazy.Value;
 	public static bool IsAlive => lazy.IsValueCreated;
@@ -68,7 +72,7 @@ public sealed class VisibilityComputer
 
 	#region Public Methods
 
-	public ReadOnlySpan<PolyMap> GetPolyMap() => _tiledMap.Span;
+	public ReadOnlySpan<PolyMap> GetPolyMap() => _tiledMap;
 
 	/// <summary>
 	///	Adds a rectangular occluder to the edges pool.
@@ -80,11 +84,11 @@ public sealed class VisibilityComputer
 		
 		ReadOnlySpan<Vector2> corners = occluder.GetCorners().AsSpan();
 
-		// Add all edges.
-		//_occluders.Add(new PolyMap(new Vector(corners[0]), new Vector(corners[1])));
-		//_occluders.Add(new PolyMap(new Vector(corners[1]), new Vector(corners[2])));
-		//_occluders.Add(new PolyMap(new Vector(corners[2]), new Vector(corners[3])));
-		//_occluders.Add(new PolyMap(new Vector(corners[3]), new Vector(corners[0])));
+		// Add all four edges.
+		_occluders.Add(new PolyMap(new Vector(corners[0]), new Vector(corners[1])));
+		_occluders.Add(new PolyMap(new Vector(corners[1]), new Vector(corners[2])));
+		_occluders.Add(new PolyMap(new Vector(corners[2]), new Vector(corners[3])));
+		_occluders.Add(new PolyMap(new Vector(corners[3]), new Vector(corners[0])));
 
 		/*Span<(Vector Point, float Distance)> sorted = stackalloc (Vector, float)[corners.Length];
 
@@ -102,36 +106,14 @@ public sealed class VisibilityComputer
 		_occluders.Add(new PolyMap(sorted[0].Point, sorted[1].Point));
 		_occluders.Add(new PolyMap(sorted[0].Point, sorted[2].Point));*/
 
-		//Span<PolyMap> occluders = stackalloc PolyMap[_occluders.Length + 4];
-		Span<PolyMap> occluders = stackalloc PolyMap[4];
-
-		// Add all four edges.
-		occluders[0] = new PolyMap(new Vector(corners[0]), new Vector(corners[1]));
-		occluders[1] = new PolyMap(new Vector(corners[1]), new Vector(corners[2]));
-		occluders[2] = new PolyMap(new Vector(corners[2]), new Vector(corners[3]));
-		occluders[3] = new PolyMap(new Vector(corners[3]), new Vector(corners[0]));
-
-		// Try to copy to memory. Resize if necessary.
-		if (!occluders.TryCopyTo(_occluders.Span))
+		/*Span<PolyMap> occluders = stackalloc[]// PolyMap[4];
 		{
-			Span<PolyMap> temp = stackalloc PolyMap[_occluders.Length + occluders.Length];
+			new PolyMap(new Vector(corners[0]), new Vector(corners[1])),
+			new PolyMap(new Vector(corners[1]), new Vector(corners[2])),
+			new PolyMap(new Vector(corners[2]), new Vector(corners[3])),
+			new PolyMap(new Vector(corners[3]), new Vector(corners[0]))
+		}*/
 
-			// Copy new.
-			occluders.CopyTo(temp);
-
-			// Append old after new.
-			_occluders.Span.CopyTo(temp.Slice(4));
-
-			// Resize memory and copy to from temporary.
-			_occluders = new PolyMap[_occluders.Length + occluders.Length];
-			temp.CopyTo(_occluders.Span);
-
-			Console.WriteLine($"Occluders:{_occluders.Length}");
-		}
-		else
-		{
-			occluders.CopyTo(_occluders.Span);
-		}
 	}
 
 	/// <summary>
@@ -160,21 +142,22 @@ public sealed class VisibilityComputer
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public ReadOnlySpan<Vector> CalculateVisibilityPolygon()	// Compute ??
 	{
-
-		if (_tiledMap.Length < 1)
+		if (_tiledMap.Count < 1)
 			throw new InvalidOperationException("TiledMap not set.");
 
 		if (_illumer == null)
 			throw new InvalidOperationException("Illumer not set.");
 
+		_visibilityPolygonPoints.Clear();
+
 		// Merge "PolyMaps"
-		Span<PolyMap> edges = stackalloc PolyMap[_tiledMap.Length + _occluders.Length];
-		_tiledMap.Span.CopyTo(edges);
-		_occluders.Span.CopyTo(edges.Slice(_tiledMap.Length));
+		Span<PolyMap> edges = stackalloc PolyMap[_tiledMap.Count + _occluders.Count];
+		_tiledMap.CopyTo(edges);
+		_occluders.CopyTo(edges.Slice(_tiledMap.Count));
 
 		// Because of duplicate points. Three rays * per edge = 6 possible hits??
-		Span<VisibilityPolygonPoint> visibilityPolygonPoints = stackalloc VisibilityPolygonPoint[edges.Length * 6];
-		int index = 0;
+		//Span<VisibilityPolygonPoint> visibilityPolygonPoints = stackalloc VisibilityPolygonPoint[edges.Length * 6];
+		//int index = 0;
 
 		// Segment/Edge
 		foreach (PolyMap p in edges)
@@ -251,19 +234,20 @@ public sealed class VisibilityComputer
 					// Add intersection point to visibility polygon perimeter.
 					if (valid)
 					{
-						visibilityPolygonPoints[index] = new VisibilityPolygonPoint()
+						VisibilityPolygonPoint visibilityPolygonPoint = new()
 						{
 							Position = point.Position,
 							Theta = point.Theta
 						};
-						index++;
+
+						_visibilityPolygonPoints.Add(visibilityPolygonPoint);
 					}
 				}
 			}
 		}
 
 		// Clear "dynamic" occluders.
-		_occluders.Span.Clear();
+		_occluders.Clear();
 
 		// Reset illumer.
 		_illumer = null;
@@ -278,8 +262,10 @@ Edges:92 Points:552 Index:552
 Edges:92 Points:552 Index:552
 */
 
+
 		// Remove duplicate (or simply similar) points from polygon.
-		Span<VisibilityPolygonPoint> unique = VisibilityPolygonPoint.Unique(visibilityPolygonPoints.Slice(0, index));
+		//Span<VisibilityPolygonPoint> unique = VisibilityPolygonPoint.Unique(visibilityPolygonPoints.Slice(0, index));
+		Span<VisibilityPolygonPoint> unique = VisibilityPolygonPoint.Unique(_visibilityPolygonPoints);
 
 		// Sort perimeter points by angle from source. 
 		// This will allow us to draw a triangle fan.
