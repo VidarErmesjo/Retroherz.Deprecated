@@ -11,7 +11,7 @@ namespace Retroherz.Visibility;
 
 public static partial class VisibilityExtensions
 {
-	private static SpanBag<PolyMap> _edges;
+	private static SpanBag<PolyMap> _edges = new SpanBag<PolyMap>();
 
 	private struct PolyMapCell
 	{
@@ -67,10 +67,7 @@ public static partial class VisibilityExtensions
 
 		// Reset "PolyMap" or resize if needed.
 		if (_edges.Count < count)
-		{
 			_edges = new SpanBag<PolyMap>(count);
-			Console.WriteLine($"CreatePolyMap() => _edges[{_edges.Count}]");
-		}
 		else
 			_edges.Clear();
 

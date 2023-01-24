@@ -11,20 +11,18 @@ using MonoGame.Extended.Entities;
 using MonoGame.Extended.Entities.Systems;
 using MonoGame.Extended.Tiled;
 
+using Retroherz.Collections;
 using Retroherz.Components;
 using Retroherz.Math;
 
 namespace Retroherz.Systems;
 public partial class ColliderSystem : EntityUpdateSystem
 {
-	// EXP
-	public static Bag<int> Colliders = new();
-	// Bag of value tuples to hold collision candidates (after broad phase)
-	private readonly Bag<int> _candidates = new();
-
 	private ComponentMapper<ColliderComponent> _colliderComponentMapper;
 	private ComponentMapper<MetaComponent> _metaComponentMapper;
 	private ComponentMapper<TransformComponent> _transformComponentMapper;
+
+	public readonly SpanBag<int> Obstacles = new SpanBag<int>();
 
 	public ColliderSystem()
 		: base(Aspect.All(typeof(ColliderComponent), typeof(MetaComponent), typeof(TransformComponent)))
@@ -44,70 +42,71 @@ public partial class ColliderSystem : EntityUpdateSystem
 
 		foreach (int entityId in ActiveEntities.AsReadOnlySpan())
 		{
-			// Get entity components
-			(ColliderComponent collider, MetaComponent meta, TransformComponent transform) entity = new(
+			(ColliderComponent collider, MetaComponent meta, TransformComponent transform) ego = (
 				_colliderComponentMapper.Get(entityId),
 				_metaComponentMapper.Get(entityId),
 				_transformComponentMapper.Get(entityId)
 			);
 
 			// Do not process
-			if (entity.collider.Type == ColliderComponentType.Static) continue;
+			if (ego.collider.Type == ColliderComponentType.Static) continue;
 
 			// Calculate ray vectors
-			/*var position = entity.transform.Position + entity.collider.Origin;
-			var direction = (entity.collider.Size - entity.collider.Origin + entity.collider.DeltaOrigin);
-			direction = entity.collider.DeltaOrigin;
-			var acceleration = entity.collider.Velocity * deltaTime;
-			entity.collider.Rays[0] = new(position, direction * -Vector.UnitY + acceleration);		// Up
-			entity.collider.Rays[1] = new(position, direction * Vector.UnitX + acceleration);		// Right
-			entity.collider.Rays[2] = new(position, direction * Vector.UnitY + acceleration);		// Down
-			entity.collider.Rays[3] = new(position, direction * -Vector.UnitX  + acceleration);	// Left*/
+			/*var position = ego.transform.Position + ego.collider.Origin;
+			var direction = (ego.collider.Size - ego.collider.Origin + ego.collider.DeltaOrigin);
+			direction = ego.collider.DeltaOrigin;
+			var acceleration = ego.collider.Velocity * deltaTime;
+			ego.collider.Rays[0] = new(position, direction * -Vector.UnitY + acceleration);		// Up
+			ego.collider.Rays[1] = new(position, direction * Vector.UnitX + acceleration);		// Right
+			ego.collider.Rays[2] = new(position, direction * Vector.UnitY + acceleration);		// Down
+			ego.collider.Rays[3] = new(position, direction * -Vector.UnitX  + acceleration);	// Left*/
 
 
 			// Update position if size has changed
-			//if (entity.collider.DeltaSize != Vector.Zero)
-				//entity.transform.Position += -entity.collider.DeltaOrigin;
+			//if (ego.collider.DeltaSize != Vector.Zero)
+				//ego.transform.Position += -ego.collider.DeltaOrigin;
 		
 			// Fun
 			// MOVE TO => ActorSystem / AISystem?
-			if (entity.meta.Type == MetaComponentType.NPC)
+			if (ego.meta.Type == MetaComponentType.NPC)
 			{
-				if (entity.collider.Velocity.X == 0.0f || entity.collider.Velocity.Y == 0.0f)
+				if (ego.collider.Velocity.X == 0.0f || ego.collider.Velocity.Y == 0.0f)
 				{
 					Vector randomVector = Vector.Random();
 
 					// Buggy!
-					entity.collider.Velocity = Vector.Clamp(randomVector, -Vector.One, Vector.One) * entity.collider.Size;
+					ego.collider.Velocity = Vector.Clamp(randomVector, -Vector.One, Vector.One) * ego.collider.Size;
 				}
 			}
 
 			// Clear and add all candidates for collision check (self excluded)
-			_candidates.Clear();
-			var inflated = Predictive.BoundingRectangle(
-				entity.collider,
-				entity.transform,
+			Obstacles.Clear();
+			BoundingRectangle inflated = Predictive.BoundingRectangle(
+				ego.collider,
+				ego.transform,
 				deltaTime,
-				false);
+				false
+			);
 
-			foreach(int candidateId in ActiveEntities.AsReadOnlySpan())	// OPT??
-			//foreach (var candidateId in ActiveEntities.Where(id => id != entityId))
+			foreach(int obstacleId in ActiveEntities.AsReadOnlySpan())	// OPT??
+			//foreach (var obstacleId in ActiveEntities.Where(id => id != entityId))
 			{
-				if (candidateId == entityId)
+				if (obstacleId == entityId)
 					continue;
 
-				(ColliderComponent collider, TransformComponent transform) candidate = new(
-					_colliderComponentMapper.Get(candidateId),
-					_transformComponentMapper.Get(candidateId)
+				(ColliderComponent collider, TransformComponent transform) obstacle = new(
+					_colliderComponentMapper.Get(obstacleId),
+					_transformComponentMapper.Get(obstacleId)
 				);
 
 				// Add if will collide
 				if (inflated.Intersects(Predictive.BoundingRectangle(
-					candidate.collider,
-					candidate.transform,
+					obstacle.collider,
+					obstacle.transform,
 					deltaTime,
-					false)))
-					_candidates.Add(candidateId);
+					false
+				)))
+					Obstacles.Add(obstacleId);
 			}
 
 			// Sort collision in order of distance
@@ -116,19 +115,18 @@ public partial class ColliderSystem : EntityUpdateSystem
 			float contactTime = 0;
 
 			// Work out collisions ...
-			entity.collider.Constraints.Clear();
-			entity.collider.Contacts.Clear();
-			foreach (int candidateId in _candidates.ToArray().AsSpan())	// OPT?
-			//foreach (var candidateId in _candidates)
+			ego.collider.Constraints.Clear();
+			ego.collider.Contacts.Clear();
+			foreach (int obstacleId in Obstacles)
 			{
-				(ColliderComponent collider, TransformComponent transform) candidate = new(
-					_colliderComponentMapper.Get(candidateId),
-					_transformComponentMapper.Get(candidateId)
+				(ColliderComponent collider, TransformComponent transform) obstacle = (
+					_colliderComponentMapper.Get(obstacleId),
+					_transformComponentMapper.Get(obstacleId)
 				);
 
 				/*if (Constrained(
 					entityId,
-					candidateId,
+					obstacleId,
 					out contactPoint,
 					out contactNormal,
 					out contactTime,
@@ -137,67 +135,67 @@ public partial class ColliderSystem : EntityUpdateSystem
 				}*/
 
 				if (Collides(
-					(entity.collider, entity.transform),
-					(candidate.collider, candidate.transform),
+					(ego.collider, ego.transform),
+					(obstacle.collider, obstacle.transform),
 					out contactPoint,
 					out contactNormal,
 					out contactTime,
 					deltaTime))
 				{					
 					// On collision... add it to contact information for resolves, effects, visuals etc.
-					(int, Vector, Vector, float) contact = new(
-						candidateId,
+					(int, Vector, Vector, float) contact = (
+						obstacleId,
 						contactPoint,
 						contactNormal,
 						contactTime
 					);
 
-					entity.collider.Contacts.Add(contact);
+					ego.collider.Contacts.Add(contact);
 				}
 			}
 
-			if (entity.collider.Constraints.Count > 0)
+			/*if (ego.collider.Constraints.Count > 0)
 			{
 				// Do the sort
-				var constraints = entity.collider.Constraints.ToArray().AsSpan();
+				var constraints = ego.collider.Constraints.AsSpan();
 				constraints.Sort((a, b) => a.ContactTime < b.ContactTime ? -1 : 1);
 
 				// Resolve all constraints (hopefully)
 				foreach (var constraint in constraints)
 				{
-					(ColliderComponent collider, TransformComponent transform) candidate = new(
+					(ColliderComponent collider, TransformComponent transform) obstacle = new(
 						_colliderComponentMapper.Get(constraint.Id),
 						_transformComponentMapper.Get(constraint.Id)
 					);
 
 					Constrain(
-						(entity.collider, entity.transform),
-						(candidate.collider, candidate.transform),
+						(ego.collider, ego.transform),
+						(obstacle.collider, obstacle.transform),
 						deltaTime);
 						{
 
 						}
 				}
-			}
+			}*/
 
-			if (entity.collider.Contacts.Count > 0)
+			if (ego.collider.Contacts.Count > 0)
 			{
 				// Do the sort
-				var contacts = entity.collider.Contacts.ToArray().AsSpan();
+				var contacts = ego.collider.Contacts.AsSpan();
 				contacts.Sort((a, b) => a.ContactTime < b.ContactTime ? -1 : 1 );
 
 				// Now resolve the collision in correct order (shortest time)
 				foreach (var contact in contacts)
 				{
-					(ColliderComponent collider, TransformComponent transform) candidate = new(
+					(ColliderComponent collider, TransformComponent transform) obstacle = new(
 						_colliderComponentMapper.Get(contact.Id),
 						_transformComponentMapper.Get(contact.Id)
 					);
 
 					// Attach / Put "Hit"Component?
 					if (Resolve(
-						(entity.collider, entity.transform),
-						(candidate.collider, candidate.transform),
+						(ego.collider, ego.transform),
+						(obstacle.collider, obstacle.transform),
 						deltaTime))
 					{
 					}
@@ -205,8 +203,8 @@ public partial class ColliderSystem : EntityUpdateSystem
 			}
 
 			// Update position DANGEROUS
-			/*if (entity.collider.DeltaOrigin != Vector.Zero)
-				entity.transform.Position -= entity.collider.DeltaOrigin;*/
+			/*if (ego.collider.DeltaOrigin != Vector.Zero)
+				ego.transform.Position -= ego.collider.DeltaOrigin;*/
 		}
 	}
 

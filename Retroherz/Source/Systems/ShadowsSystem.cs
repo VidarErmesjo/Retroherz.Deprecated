@@ -18,6 +18,7 @@ using Retroherz.Visibility;
 
 namespace Retroherz.Systems;
 
+// VisibilitySystem. Render in RenderSystem
 public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 {
 	private readonly OrthographicCamera _camera;
@@ -35,8 +36,8 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 	private ComponentMapper<SpriteComponent> _spriteComponentMapper;
 	private ComponentMapper<TransformComponent> _transformComponentMapper;
 
-	public SpanBag<int> Occluders = new();
-	public SpanBag<int> Illumers = new();
+	public readonly SpanBag<int> Occluders = new SpanBag<int>();
+	public readonly SpanBag<int> Illumers = new SpanBag<int>();
 
 	public ShadowsSystem(GraphicsManager graphicsManager, TiledMap tiledMap)
 		: base(Aspect.All(typeof(ColliderComponent), typeof(SpriteComponent), typeof(TransformComponent)))
