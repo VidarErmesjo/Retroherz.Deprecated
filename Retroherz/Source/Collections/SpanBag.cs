@@ -1,14 +1,16 @@
 using System;
 using System.Collections.Generic;
 namespace Retroherz.Collections;
+// TODO: Find better name!
+// MemoryBag, Sack, Kit, Pouch, Pocket, Pack, Satchel, Tote, Poke, Sac, Sekk, Case, Duffel
 
 /// <summary>
 ///	Represents a generic collection of unmanaged types.
 /// Powered by Span and Memory.
 /// </summary>
-public struct SpanBag<T> where T: unmanaged
+public class SpanBag<T> where T: unmanaged
 {
-	private Memory<T> _data = new T[16];
+	private Memory<T> _data;
 	private int _count;
 
 	/// <summary>
@@ -27,15 +29,10 @@ public struct SpanBag<T> where T: unmanaged
 	///	</returns>
 	public int Count => _data.Slice(0, _count).Length;
 
-	/// <summary>
-	///	Default constructor (capacity = 16).
-	/// </summary>
-	public SpanBag() {}
-
 	///	<summary>
 	///	Construct a collection with a given capacity.
 	///	</summary>
-	public SpanBag(int size)
+	public SpanBag(int size = 16)
 	{
 		_data = new T[size];
 		_count = 0;
