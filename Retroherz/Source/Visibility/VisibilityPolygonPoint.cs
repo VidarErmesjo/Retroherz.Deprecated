@@ -7,14 +7,15 @@ namespace Retroherz.Visibility;
 
 internal struct VisibilityPolygonPoint
 {
+	///	<summary>
+	///	Directional angle of point.
+	///	</summary>
 	public required float Theta { get; set; }
-	public required Vector Position { get; set; }
 
-	public VisibilityPolygonPoint(Vector position, float theta)
-	{
-		Position = position;
-		Theta = theta;
-	}
+	///	<summary>
+	///	Spacial position of point.
+	///	</summary>
+	public required Vector Position { get; set; }
 
 	///	<summary>
 	///	Returns a slice of span containing no "duplicates".

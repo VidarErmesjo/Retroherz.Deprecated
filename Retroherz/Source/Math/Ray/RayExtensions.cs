@@ -34,8 +34,8 @@ public static class RayExtensions
 		// Are we in the correct (South-East) quadrant?
 		// ... then calculate out-of-bounds offset
 		(bool outOfBounds, Vector offset) state = (
-			rectangle.Position.X < 0 || rectangle.Position.Y < 0,
-			rectangle.Size - ray.Origin
+			outOfBounds: rectangle.Position.X <= 0 || rectangle.Position.Y <= 0,
+			offset: rectangle.Size - ray.Origin
 		);
 
 		// To not confuse the algorithm on off-grid bounds we shift rectangle position and ray origin
@@ -45,6 +45,7 @@ public static class RayExtensions
 		{
 			rectangle.Position += state.offset;
 			ray.Origin += state.offset;
+			System.Console.WriteLine("Out of bounds!");
 		}
 
 		// Cache division
@@ -53,7 +54,13 @@ public static class RayExtensions
 		// Calculate intersections with rectangle boundings axes
 		Vector targetNear = (rectangle.Position - ray.Origin) * inverseDirection;
 		Vector targetFar = (rectangle.Position + rectangle.Size - ray.Origin) * inverseDirection;
-		
+
+		// YouTube commment: DMSG1981
+		//targetFar.X = ray.Direction.X != 0 ? (rectangle.Position.X - ray.Origin.X) / ray.Direction.X : (rectangle.Position.X - ray.Origin.X) >= 0 ? float.PositiveInfinity : float.NegativeInfinity;
+		//targetFar.Y = ray.Direction.Y != 0 ? (rectangle.Position.Y - ray.Origin.Y) / ray.Direction.Y : (rectangle.Position.Y - ray.Origin.Y) >= 0 ? float.PositiveInfinity : float.NegativeInfinity;
+		//targetNear.X = ray.Direction.X != 0 ? (rectangle.Position.X + rectangle.Size.X - ray.Origin.X) / ray.Direction.X : (rectangle.Position.X + rectangle.Size.X - ray.Origin.X) > 0 ? float.PositiveInfinity : float.NegativeInfinity;
+		//targetNear.Y = ray.Direction.Y != 0 ? (rectangle.Position.Y + rectangle.Size.Y - ray.Origin.Y) / ray.Direction.Y : (rectangle.Position.Y + rectangle.Size.Y - ray.Origin.Y) > 0 ? float.PositiveInfinity : float.NegativeInfinity;
+
 		if (float.IsNaN(targetFar.X) || float.IsNaN(targetFar.Y)) return false;
 		if (float.IsNaN(targetNear.X) || float.IsNaN(targetNear.Y)) return false;
 

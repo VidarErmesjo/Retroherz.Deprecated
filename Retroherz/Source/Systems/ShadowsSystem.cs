@@ -36,11 +36,11 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 	private ComponentMapper<SpriteComponent> _spriteComponentMapper;
 	private ComponentMapper<TransformComponent> _transformComponentMapper;
 
-	public readonly SpanBag<int> Occluders = new SpanBag<int>();
-	public readonly SpanBag<int> Illumers = new SpanBag<int>();
+	public readonly Sekk<int> Occluders = new Sekk<int>();
+	public readonly Sekk<int> Illumers = new Sekk<int>();
 
 	public ShadowsSystem(GraphicsManager graphicsManager, TiledMap tiledMap)
-		: base(Aspect.All(typeof(ColliderComponent), typeof(SpriteComponent), typeof(TransformComponent)))
+		: base(Aspect.All(typeof(ColliderComponent), typeof(TransformComponent)))
 	{
 		_camera = graphicsManager.GetCamera();
 		_destinationRectangle = graphicsManager.DestinationRectangle;
@@ -80,7 +80,7 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 			Illumers.Add(entityId);
 		}
 
-		// Process "illumer".
+		// Process "Illumer".
 		foreach (int illumerId in Illumers)
 		{
 			(ColliderComponent Collider, PointLightComponent Light, TransformComponent Transform) illumer = (
@@ -94,7 +94,7 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 				illumer.Light.Radius
 			);
 
-			// Add "occluders".
+			// Add "Occluders".
 			foreach (int occluderId in Occluders)
 			{
 				if (occluderId == illumerId)
@@ -105,7 +105,10 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 					_transformComponentMapper.Get(occluderId)
 				);
 
-				_visibilityComputer.AddOccluder(new RectangleF(occluder.Transform.Position, occluder.Collider.Size));
+				_visibilityComputer.AddOccluder(
+					occluder.Transform.Position,
+					occluder.Collider.Size
+				);
 			}
 
 			ReadOnlySpan<Vector> points = _visibilityComputer.CalculateVisibilityPolygon();

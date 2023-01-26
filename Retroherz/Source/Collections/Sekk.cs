@@ -4,11 +4,15 @@ namespace Retroherz.Collections;
 // TODO: Find better name!
 // MemoryBag, Sack, Kit, Pouch, Pocket, Pack, Satchel, Tote, Poke, Sac, Sekk, Case, Duffel
 
+// Sekk & Stakk ??
+// Sack & Stack ??
+// Pouch
+
 /// <summary>
 ///	Represents a generic collection of unmanaged types.
 /// Powered by Span and Memory.
 /// </summary>
-public class SpanBag<T> where T: unmanaged
+public class Sekk<T>: IEquatable<Sekk<T>> where T: unmanaged
 {
 	private Memory<T> _data;
 	private int _count;
@@ -32,7 +36,7 @@ public class SpanBag<T> where T: unmanaged
 	///	<summary>
 	///	Construct a collection with a given capacity.
 	///	</summary>
-	public SpanBag(int size = 16)
+	public Sekk(int size = 16)
 	{
 		_data = new T[size];
 		_count = 0;
@@ -113,14 +117,7 @@ public class SpanBag<T> where T: unmanaged
 	///	<summary>
 	///	Returns true if the collecton includes the specified element.
 	///	</summary>
-	public bool Contains(T element)
-	{
-		for (int i = 0; i < this.Count; i++)
-			if (element.Equals(_data.Span[i]))
-				return true;
-
-		return false;
-	}
+	public bool Contains(T element) => this.Find(element) < 0 ? false : true;
 
 	///	<summary>
 	///	Copies the contents of this collection into a destination Memory.
@@ -135,12 +132,27 @@ public class SpanBag<T> where T: unmanaged
 	///	<summary>
 	///	Copies the contents of this collection into a destination collection.
 	///	</summary>
-	public void CopyTo(SpanBag<T> destination) => _data.Slice(0, _count).CopyTo(destination._data);
+	public void CopyTo(Sekk<T> destination) => _data.Slice(0, _count).CopyTo(destination._data);
 
 	/// <summary>
 	///	Fills the elements of this collection with a specified value.
 	///	</summary>
 	public void Fill(T value) => _data.Span.Fill(value);
+
+	///	<summary>
+	///	Search for an element in the collection.
+	///	</summary>
+	///	<returns>
+	///	Index of specified element.
+	/// </returns>
+	public int Find(T element)
+	{
+		for (int i = 0; i < this.Count; i++)
+			if (element.Equals(_data.Span[i]))
+				return i;
+
+		return -1;
+	}
 
 	/// <summary>
 	///	Returns an enumerator for this collection.
@@ -156,11 +168,40 @@ public class SpanBag<T> where T: unmanaged
 	public void Sort(Comparison<T> comparison) => _data.Slice(0, _count).Span.Sort(comparison);
 
 	/// <summary>
-	///	Resizes the collection.
+	///	Removes the element at the specified index from the collection.
 	/// </sumary>
-	public void Resize(int size)
+	/// <returns>
+	///	The removed element.
+	/// </returns>
+	public T Remove(int index)
 	{
-		throw new NotImplementedException("Resize not implemented.");
+		T removed = _data.Span[index];
+
+		// Last element gets freed position.
+		_data.Span[index] = _data.Span[_count - 1];
+
+		_count--;
+
+		return removed;
+	}
+
+	/// <summary>
+	///	Removes the specified element from the collection.
+	/// </sumary>
+	/// <returns>
+	///	The removed element.
+	///	</returns>
+	public T Remove(T element)
+	{
+		int index = this.Find(element);
+
+		T removed = _data.Span[index];
+
+		_data.Span[index] = _data.Span[_count - 1];
+
+		_count--;
+
+		return removed;
 	}
 
 	///	<summary>
@@ -205,9 +246,9 @@ public class SpanBag<T> where T: unmanaged
 	///	<returns>
 	///	A copy of the current collection with no duplicates.
 	///	</returns>
-	public SpanBag<T> UniqueCopy()
+	public Sekk<T> UniqueCopy()
 	{
-		SpanBag<T> copy = new SpanBag<T>(this.Count);
+		Sekk<T> copy = new Sekk<T>(this.Count);
 		
 		for (int i = 0; i < this.Count; i++)
 		{
@@ -226,25 +267,25 @@ public class SpanBag<T> where T: unmanaged
 		return copy;
 	}
 
-	public static implicit operator Span<T>(SpanBag<T> spanBag) => spanBag._data.Slice(0, spanBag._count).Span;
-	public static implicit operator ReadOnlySpan<T>(SpanBag<T> spanBag) => spanBag._data.Slice(0, spanBag._count).Span;
-	public static implicit operator Memory<T>(SpanBag<T> spanBag) => spanBag._data.Slice(0, spanBag._count);
-	public static implicit operator ReadOnlyMemory<T>(SpanBag<T> spanBag) => spanBag._data.Slice(0, spanBag._count);
+	public static implicit operator Span<T>(Sekk<T> spanBag) => spanBag._data.Slice(0, spanBag._count).Span;
+	public static implicit operator ReadOnlySpan<T>(Sekk<T> spanBag) => spanBag._data.Slice(0, spanBag._count).Span;
+	public static implicit operator Memory<T>(Sekk<T> spanBag) => spanBag._data.Slice(0, spanBag._count);
+	public static implicit operator ReadOnlyMemory<T>(Sekk<T> spanBag) => spanBag._data.Slice(0, spanBag._count);
 
 	/// <summary>
-	/// Returns true if the vector equals the other vector.
+	/// Returns true if the collection equals the other collection.
 	/// </summary>
-	public bool Equals(SpanBag<T> other) => (
+	public bool Equals(Sekk<T> other) => (
 		(Capacity == other.Capacity) &&
 		(Count == other.Count)
 	);
 
 	// Overrides
 	/// <summary>
-	/// Returns true if the vector equals the object.
+	/// Returns true if the collection equals the object.
 	/// </summary>
 	public override bool Equals(object obj) => (
-		(obj is SpanBag<T> other) &&
+		(obj is Sekk<T> other) &&
 		(other.Capacity, other.Count).Equals((Capacity, Count))
 	);
 

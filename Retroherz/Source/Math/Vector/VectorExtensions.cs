@@ -40,8 +40,8 @@ public static class VectorExtensions
 	/// <summary>
 	/// Returns the cross product of vectors u and v.
 	/// </summary>    
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float Cross(Vector u, Vector v) => (u.X * v.Y - u.Y * v.X);
+	/*[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static float Cross(Vector u, Vector v) => (u.X * v.Y - u.Y * v.X);*/
 
 	/// <summary>
 	/// Returns the distance between vectors u and v.

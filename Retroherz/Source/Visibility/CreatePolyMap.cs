@@ -11,7 +11,7 @@ namespace Retroherz.Visibility;
 
 public static partial class VisibilityExtensions
 {
-	private static SpanBag<PolyMap> _edges = new SpanBag<PolyMap>();
+	private static Sekk<PolyMap> _edges = new Sekk<PolyMap>();
 
 	private struct PolyMapCell
 	{
@@ -25,7 +25,7 @@ public static partial class VisibilityExtensions
 	/// <summary>
 	///	Convert Tiled map to polygon map.
 	/// </summary>
-	public static SpanBag<PolyMap> CreatePolyMap(this TiledMap tiledMap, string layerName) => CreatePolyMap(
+	public static Sekk<PolyMap> CreatePolyMap(this TiledMap tiledMap, string layerName) => CreatePolyMap(
 		tiledMap.GetLayer<TiledMapTileLayer>(layerName).Tiles,
 		tiledMap.GetLayer<TiledMapTileLayer>(layerName).Width,
 		tiledMap.GetLayer<TiledMapTileLayer>(layerName).Height,
@@ -36,7 +36,7 @@ public static partial class VisibilityExtensions
 	/// <summary>
 	///	Convert Tiled map to polygon map.
 	/// </summary>
-	public static SpanBag<PolyMap> CreatePolyMap(this TiledMap tiledMap, ushort layer = 0) => CreatePolyMap(
+	public static Sekk<PolyMap> CreatePolyMap(this TiledMap tiledMap, ushort layer = 0) => CreatePolyMap(
 		tiledMap.TileLayers[layer].Tiles,
 		tiledMap.TileLayers[layer].Width,
 		tiledMap.TileLayers[layer].Height,
@@ -46,7 +46,7 @@ public static partial class VisibilityExtensions
 
 	// Courtesy of One Lone Coder - based on and modified by Vidar "Voidar" Ermesjø
 	// https://github.com/OneLoneCoder/Javidx9/blob/master/PixelGameEngine/SmallerProjects/OneLoneCoder_PGE_Rectangles.cpp
-	private static SpanBag<PolyMap> CreatePolyMap(
+	private static Sekk<PolyMap> CreatePolyMap(
 		TiledMapTile[] tiles,
 		int width,
 		int height,
@@ -67,7 +67,7 @@ public static partial class VisibilityExtensions
 
 		// Reset "PolyMap" or resize if needed.
 		if (_edges.Count < count)
-			_edges = new SpanBag<PolyMap>(count);
+			_edges = new Sekk<PolyMap>(count);
 		else
 			_edges.Clear();
 

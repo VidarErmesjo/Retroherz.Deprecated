@@ -22,7 +22,7 @@ public partial class ColliderSystem : EntityUpdateSystem
 	private ComponentMapper<MetaComponent> _metaComponentMapper;
 	private ComponentMapper<TransformComponent> _transformComponentMapper;
 
-	public readonly SpanBag<int> Obstacles = new SpanBag<int>();
+	public readonly Sekk<int> Obstacles = new Sekk<int>();
 
 	public ColliderSystem()
 		: base(Aspect.All(typeof(ColliderComponent), typeof(MetaComponent), typeof(TransformComponent)))

@@ -20,6 +20,7 @@ using Arch.Core.Utils;
 
 using MonoGame.Extended.Tiled.Renderers;
 
+using Retroherz.Collections;
 using Retroherz.Components;
 using Retroherz.Systems;
 using Retroherz.Managers;
@@ -87,7 +88,7 @@ File name: 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Re
             var player = world.CreateEntity();
 			player.Attach(new MetaComponent(id: player.Id, type: MetaComponentType.Player));
             player.Attach(new PlayerComponent());
-			player.Attach(new PointLightComponent(radius: 64, color: Color.CornflowerBlue));
+			player.Attach(new PointLightComponent(radius: 96, color: Color.CornflowerBlue));
             player.Attach(new SpriteComponent(asepriteDocument: assetsManager.Sprite("Shitsprite")));
             player.Attach(new TransformComponent(position: position));
             player.Attach(new ColliderComponent(size: size, type: ColliderComponentType.Dynamic));

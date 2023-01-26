@@ -54,6 +54,7 @@ public partial class ColliderSystem
 			}*/
 
 			// Displace
+			subject.collider.Velocity += contactNormal * obstacle.collider.Velocity.Abs() * (1 - contactTime);	// Exp
 			subject.collider.Velocity += contactNormal * subject.collider.Velocity.Abs() * (1 - contactTime);
 
 
