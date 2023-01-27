@@ -21,7 +21,7 @@ internal struct VisibilityPolygonPoint
 	///	Returns a slice of span containing no "duplicates".
 	///	</summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Span<VisibilityPolygonPoint> Unique(Span<VisibilityPolygonPoint> visibilityPolygonPoints, float tolerance = 0.1f)
+	public static Span<VisibilityPolygonPoint> Unique(Span<VisibilityPolygonPoint> visibilityPolygonPoints, float tolerance = 0.001f)
 	{
 		int k = 0;
 		for (int i = 0; i < visibilityPolygonPoints.Length; i++)

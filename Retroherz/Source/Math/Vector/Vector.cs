@@ -125,6 +125,8 @@ public struct Vector : IEquatable<Vector>
 		public static implicit operator Vector(Size2 size) => new(size.Width, size.Height);
 		public static implicit operator Vector(Vector2 vector) => new(vector.X, vector.Y);
 		public static implicit operator Vector2(Vector vector) => new(vector.X, vector.Y);
+		public static implicit operator (float X, float Y)(Vector vector) => new(vector.X, vector.Y);
+		public static implicit operator Vector((float X, float Y) tuple) => new(tuple.X, tuple.Y);
 	
 	#endregion
 

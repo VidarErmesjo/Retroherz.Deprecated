@@ -45,7 +45,7 @@ public static class RayExtensions
 		{
 			rectangle.Position += state.offset;
 			ray.Origin += state.offset;
-			System.Console.WriteLine("Out of bounds!");
+			//System.Console.WriteLine("Out of bounds!");
 		}
 
 		// Cache division

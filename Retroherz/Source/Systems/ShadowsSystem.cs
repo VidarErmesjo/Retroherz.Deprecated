@@ -125,7 +125,7 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 		//_graphics.SetRenderTarget(_renderTarget.Color);
 		_graphics.Clear(Color.Transparent);
 
-		_spriteBatch.Begin(
+		/*_spriteBatch.Begin(
 			sortMode: SpriteSortMode.BackToFront,
 			blendState: BlendState.AlphaBlend,
 			samplerState: SamplerState.PointClamp,
@@ -138,7 +138,7 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 			foreach (var edge in _visibilityComputer.GetPolyMap())
 				_spriteBatch.DrawLine(edge.Start, edge.End, Color.Red);
 
-		_spriteBatch.End();
+		_spriteBatch.End();*/
 
 		// Draw Light
 		float ambientLightStrength = 0.0f;

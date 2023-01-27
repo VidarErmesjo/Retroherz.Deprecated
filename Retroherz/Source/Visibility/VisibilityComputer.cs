@@ -55,7 +55,6 @@ public sealed class VisibilityComputer
 	private const string INIT_ERROR = "SetIllumer() must be called prior to AddOccluder() and CalculateVisibilityPolygon().";
 	private Exception IllumerNotSetException = new InvalidOperationException(INIT_ERROR);
 
-
 	#endregion
 
 	#region Singleton
@@ -75,7 +74,6 @@ public sealed class VisibilityComputer
 	#endregion
 
 	#region Public Methods
-
 	public ReadOnlySpan<PolyMap> GetPolyMap() => _tiledMap;
 
 	/// <summary>
@@ -105,13 +103,29 @@ public sealed class VisibilityComputer
 		sorted.Sort((a, b) => a.Distance < b.Distance ? -1 : 1);
 
 		// Add the two nearest edges if their shared point is contained within "Illumer" radius.
-		CircleF circle = new CircleF(_illumer.Origin, _illumer.Radius);
-		//BoundingRectangle rectangle = new BoundingRectangle(_illumer.Origin, new(_illumer.Radius,_illumer.Radius));
+		/*CircleF circle = new CircleF(_illumer.Origin, _illumer.Radius);
 		if (circle.Contains(sorted[0].Point))
 		{
+			//_edges.Add(new PolyMap(sorted[0].Point, sorted[1].Point));
+			//_edges.Add(new PolyMap(sorted[0].Point, sorted[2].Point));
+			_edges.Add(new PolyMap(corners[0], corners[1]));
+			_edges.Add(new PolyMap(corners[1], corners[2]));
+			_edges.Add(new PolyMap(corners[2], corners[3]));
+			_edges.Add(new PolyMap(corners[3], corners[0]));
+		}*/
+
+		Vector u, v;
+
+		Circle circle = new Circle(_illumer.Origin, _illumer.Radius);
+		//if (circ.Intersects(sorted[0].Point, sorted[1].Point, out u, out v) || circ.Intersects(sorted[0].Point, sorted[2].Point, out u, out v))
+		//	Console.WriteLine($"u:{u} v:{v}");
+		if (circle.Intersects(sorted[0].Point, sorted[1].Point, out u, out v))
 			_edges.Add(new PolyMap(sorted[0].Point, sorted[1].Point));
+			//_edges.Add(new PolyMap(u, v));
+
+		if (circle.Intersects(sorted[0].Point, sorted[2].Point, out u, out v))
 			_edges.Add(new PolyMap(sorted[0].Point, sorted[2].Point));
-		}
+			//_edges.Add(new PolyMap(u, v));
 
 		/*if (circle.Contains(corners[0]) || circle.Contains(corners[1]))
 			_edges.Add(new PolyMap(corners[0], corners[1]));
@@ -160,7 +174,27 @@ public sealed class VisibilityComputer
 
 		_visibilityPolygonPoints.Clear();
 
-		AddFallbackBoundary();
+		Vector u, v;
+
+		//CircleF circle = new CircleF(_illumer.Origin, _illumer.Radius);
+		/*Circle circle = new Circle(_illumer.Origin, _illumer.Radius);
+		foreach (PolyMap edge in _tiledMap)
+			if (circle.Intersects(edge.Start, edge.End, out u, out v))
+				_edges.Add(new PolyMap(u, v));*/
+
+		//_edges.Add(new PolyMap(Vector.One * 16, Vector.One * 64));
+
+		//AddCircularFallbackBoundary(16); // Glitchy on statics. Perfect on dynamics?
+		AddCircularFallbackBoundary(3, 2); // vs. 16, 1 ?? What is best
+		
+		//AddCircularFallbackBoundary(16);
+		// 9 edges is the magic number?? Glitchy around Origin < 32 && 80 (rad 96)
+		// 96 / 2 = 48. 48 + 32 = 80! also 48 + 80 = 128!
+		// 18 edges. Starts at eighteenth tile: 8 * 16 = 128. 8 => Positive Infiinity?
+		// 9 edges. Starts at 2: 2 * 16 = 32, happens at 5: 5 * 16 = 80
+		//AddQuadraticFallbackBoundary(0.5f);	// "Perfect" on statics. Glitchy on dynamic.
+
+		//_edges.Add(new PolyMap(Vector.Zero, Vector.One * 128));	// Diagnonal edge
 
 		foreach (PolyMap p in _edges)
 		{
@@ -204,12 +238,25 @@ public sealed class VisibilityComputer
 						// Create line segment vector
 						Vector segment = q.End - q.Start;
 
+
 						if (Vector.Abs(segment - ray.Direction) > Vector.Zero)
 						{
 							// t2 is normalised distance from line segment start to line segment end of intersect point.
 							float t2 = (ray.Direction.X * (q.Start.Y - _illumer.Origin.Y) +
 										ray.Direction.Y * (_illumer.Origin.X - q.Start.X)) /
 										Vector.Cross(segment, ray.Direction);
+
+						if (Vector.Cross(segment, ray.Direction) == 0)
+							Console.WriteLine("Zero!");
+
+						if (float.IsNaN(Vector.Cross(segment, ray.Direction)))
+							Console.WriteLine("IsNaN!");
+
+						if (float.IsPositiveInfinity(Vector.Cross(segment, ray.Direction)))
+							Console.WriteLine("IsPositiveInfinity");
+
+						if (float.IsNegativeInfinity(Vector.Cross(segment, ray.Direction)))
+							Console.WriteLine("IsNegativeInfinity");
 
 							// t1 is normalised distance from source along ray to ray length of intersect point.
 							float t1 = (q.Start.X + segment.X * t2 - _illumer.Origin.X) / ray.Direction.X;
@@ -242,6 +289,20 @@ public sealed class VisibilityComputer
 						};
 
 						_visibilityPolygonPoints.Add(visibilityPolygonPoint);
+
+						if (point.Position == Vector.Zero)
+							Console.WriteLine("Zero!");
+
+						if (float.IsNaN(point.Position.X) || float.IsNaN(point.Position.Y))
+							Console.WriteLine("IsNaN!");
+
+						if (float.IsPositiveInfinity(point.Position.X) || float.IsPositiveInfinity(point.Position.Y))
+							Console.WriteLine("IsPositiveInfinity");
+
+						if (float.IsNegativeInfinity(point.Position.X) || float.IsNegativeInfinity(point.Position.Y))
+							Console.WriteLine("IsNegativeInfinity");
+
+
 					}
 				}
 			}
@@ -249,8 +310,9 @@ public sealed class VisibilityComputer
 
 		// Remove duplicate (or simply similar) points from polygon.
 		Span<VisibilityPolygonPoint> unique = VisibilityPolygonPoint.Unique(_visibilityPolygonPoints);
+		//unique = _visibilityPolygonPoints;
 
-		//Console.WriteLine($"Edges:{_edges.Count} Points:{_visibilityPolygonPoints.Count} Unique:{unique.Length}");
+		//Console.WriteLine($"Edges:{_edges.Count} Points:{_visibilityPolygonPoints.Count} Unique:{unique.Length} Origin:{_illumer.Origin}");
 
 		// Sort perimeter points by angle from source. 
 		// This will allow us to draw a triangle fan.
@@ -271,37 +333,57 @@ public sealed class VisibilityComputer
 	#endregion
 
 	#region Private Methods
+	/// <summary>
+	///	Adds a circular "fallback" boundary with "Illumer" radius.
+	/// </summary>
+	private void AddCircularFallbackBoundary(int edges = 16, float multiplier = 1)
+	{
+		float delta = MathHelper.TwoPi / edges;
+		float angle = 0;
+		float radius = _illumer.Radius * multiplier;
+
+		Vector start, end;
+
+		for (int i = 0; i < edges; i++)
+		{
+			start = new Vector(_illumer.Origin.X - radius * MathF.Cos(angle), _illumer.Origin.Y - radius * MathF.Sin(angle));
+			angle += delta;
+			end = new Vector(_illumer.Origin.X - radius * MathF.Cos(angle), _illumer.Origin.Y - radius * MathF.Sin(angle));
+			_edges.Add(new PolyMap(start, end));
+		}
+	}
 
 	/// <summary>
 	///	Adds a quadratic "fallback" boundary. Edges have a length of twice the Illumer radius.
 	/// </summary>
-	private void AddFallbackBoundary()
+	private void AddQuadraticFallbackBoundary(float multiplier = 1)
 	{
 		Vector start, end;
 		float x, y;
+		float length = _illumer.Radius * multiplier;
 
 		// Left to right (top)
-		y = _illumer.Origin.Y - _illumer.Radius;
-		start = new Vector(_illumer.Origin.X - _illumer.Radius, y);
-		end = new Vector(_illumer.Origin.X + _illumer.Radius, y);
+		y = _illumer.Origin.Y - length;
+		start = new Vector(_illumer.Origin.X - length, y);
+		end = new Vector(_illumer.Origin.X + length, y);
 		_edges.Add(new PolyMap(start, end));
 
 		// Left to right (bottom)
-		y = _illumer.Origin.Y + _illumer.Radius;
-		start = new Vector(_illumer.Origin.X - _illumer.Radius, y);
-		end = new Vector(_illumer.Origin.X + _illumer.Radius, y);
+		y = _illumer.Origin.Y + length;
+		start = new Vector(_illumer.Origin.X - length, y);
+		end = new Vector(_illumer.Origin.X + length, y);
 		_edges.Add(new PolyMap(start, end));
 
 		// Top to bottom (left)
-		x = _illumer.Origin.X - _illumer.Radius;
-		start = new Vector(x, _illumer.Origin.Y - _illumer.Radius);
-		end = new Vector(x, _illumer.Origin.Y + _illumer.Radius);
+		x = _illumer.Origin.X - length;
+		start = new Vector(x, _illumer.Origin.Y - length);
+		end = new Vector(x, _illumer.Origin.Y + length);
 		_edges.Add(new PolyMap(start, end));
 
 		// Top to bottom (right)
-		x = _illumer.Origin.X + _illumer.Radius;
-		start = new Vector(x, _illumer.Origin.Y - _illumer.Radius);
-		end = new Vector(x, _illumer.Origin.Y + _illumer.Radius);
+		x = _illumer.Origin.X + length;
+		start = new Vector(x, _illumer.Origin.Y - length);
+		end = new Vector(x, _illumer.Origin.Y + length);
 		_edges.Add(new PolyMap(start, end));
 	}
 
