@@ -33,8 +33,8 @@ public partial class ColliderSystem
 		// Calculate ray Vector
 		Ray ray = new(
 			origin: subject.transform.Position + subject.collider.HalfExtents,
-			direction: subject.collider.Velocity * deltaTime);
-			//direction: (subject.collider.Velocity - obstacle.collider.Velocity) * deltaTime);	// EXP
+			//direction: subject.collider.Velocity * deltaTime);
+			direction: (subject.collider.Velocity - obstacle.collider.Velocity) * deltaTime);	// YEAH! :P
 
 		// Expand obstacle collider rectangle by subject dimensions
 		(Vector Position, Vector Size) rectangle = (
@@ -113,7 +113,7 @@ public partial class ColliderSystem
 			out contactTime,
 			out timeHitFar
 		))
-			return (contactTime >= 0 && contactTime < 1);
+			return (contactTime >= -1 && contactTime < 1); // Works??? (>= -1)
 		else 
 			return false;
 	}

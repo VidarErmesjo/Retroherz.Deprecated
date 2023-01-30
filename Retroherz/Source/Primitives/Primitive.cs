@@ -12,6 +12,7 @@ public struct Primitive
 	public ReadOnlySpan<VertexPositionTexture> Vertices => _vertices.Span;
 	public ReadOnlySpan<short> Indices => _indices.Span;
 
+	// TODO
 	public PrimitiveType PrimitiveType { get; set; }
 	public int PrimitiveCount { get; set; }
 

@@ -22,6 +22,8 @@ public static partial class VisibilityExtensions
 		public required bool Exists;
 	}
 
+	public static TiledMap GetTiledMap(this TiledMap tiledMap) => tiledMap;
+
 	/// <summary>
 	///	Convert Tiled map to polygon map.
 	/// </summary>

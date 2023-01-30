@@ -13,12 +13,48 @@ public struct Circle
 	}
 
 	/// <summary>
-	///	Determines whether a line, defined by the two vectors u and v, intersects this circle.
+	///	Determines whether a circle intersects this circle.
+	///	</summary>
+	public bool Intersects(float x, float y, float radius) => Intersects(new Vector(x, y), radius);
+
+	/// <summary>
+	///	Determines whether a circle intersects this circle.
+	///	</summary>
+	public bool Intersects(Circle circle) => Intersects(circle.Center, circle.Radius);
+
+	/// <summary>
+	///	Determines whether a circle intersects this circle.
+	///	</summary>
+	public bool Intersects(Vector center, float radius) => (
+		Vector.DistanceSquared(this.Center, center) <= (this.Radius + radius) * (this.Radius + radius)
+	);
+
+	/// <summary>
+	///	Determines whether a line segment, defined by the two points 'a' and 'b', intersects this circle.
 	/// </summary>
-	public bool Intersects(Vector u, Vector v)
+	public bool Intersects(Vector a, Vector b)
 	{
-		Vector a, b;
-		return Intersects(u.X, u.Y, v.X, v.Y, out a, out b);
+		// Compute vector 'ac' and 'ab'.
+		Vector ac = this.Center - a;
+		Vector ab = b - a;
+
+		// Get point 'd' by taking the projection.
+		Vector d = Vector.Project(ac, ab) + a;
+
+		Vector ad = d - a;
+
+		// Solve 'ad' = k * 'ab'.
+		float k = MathF.Abs(ab.X) > MathF.Abs(ab.Y) ? ad.X / ab.X : ad.Y / ab.Y;
+
+		float distance;
+
+		// Check if point 'd' is off either end of the line segment.
+		if (k <= 0) distance = MathF.Sqrt(Vector.Hypothenuse(this.Center, a));
+		else if (k >= 1) distance = MathF.Sqrt(Vector.Hypothenuse(this.Center, b));
+		else distance = MathF.Sqrt(Vector.Hypothenuse(this.Center, d));
+
+		// Evaluate the distance to circle radius.
+		return distance <= this.Radius ? true : false;
 	}
 
 	/// <summary>

@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -38,6 +39,8 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 
 	public readonly Sekk<int> Occluders = new Sekk<int>();
 	public readonly Sekk<int> Illumers = new Sekk<int>();
+
+	//public readonly MemoryPool<Vector> vectors;
 
 	public ShadowsSystem(GraphicsManager graphicsManager, TiledMap tiledMap)
 		: base(Aspect.All(typeof(ColliderComponent), typeof(TransformComponent)))
@@ -100,14 +103,16 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 				if (occluderId == illumerId)
 					continue;
 
-				(ColliderComponent Collider, TransformComponent Transform) occluder = (
+				(ColliderComponent Collider, PointLightComponent Light, TransformComponent Transform) occluder = (
 					_colliderComponentMapper.Get(occluderId),
+					_pointLightComponentMapper.Get(occluderId) ?? new PointLightComponent(),
 					_transformComponentMapper.Get(occluderId)
 				);
 
 				_visibilityComputer.AddOccluder(
 					occluder.Transform.Position,
-					occluder.Collider.Size
+					occluder.Collider.Size,
+					occluder.Light.Radius
 				);
 			}
 

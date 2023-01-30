@@ -59,11 +59,11 @@ public class Sekk<T>: IEquatable<Sekk<T>> where T: unmanaged
 		// Resize collection if needed.
 		if (_data.Length < _count + 1)
 		{
-			int size = _data.Length + 1;
+			int size = _data.Length * 2;
 			Span<T> temp = stackalloc T[size];
 			_data.Span.CopyTo(temp);
 			_data = new T[size];
-			Console.WriteLine($"Resize. [{size}]");
+			Console.WriteLine($"Resized [{size}]");
 		}
 
 		// Add the element.

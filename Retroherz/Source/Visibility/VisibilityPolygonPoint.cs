@@ -1,6 +1,5 @@
 using System;
 using System.Runtime.CompilerServices;
-using System.Collections.Generic;
 using Retroherz.Math;
 
 namespace Retroherz.Visibility;
@@ -17,11 +16,16 @@ internal struct VisibilityPolygonPoint
 	///	</summary>
 	public required Vector Position { get; set; }
 
+	public const float Tolerance = 0.001f;	// Do not touch! Bestest number ;) - VE
+
 	///	<summary>
-	///	Returns a slice of span containing no "duplicates".
+	///	Returns a slice of span containing unique items within a tolerance.
 	///	</summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Span<VisibilityPolygonPoint> Unique(Span<VisibilityPolygonPoint> visibilityPolygonPoints, float tolerance = 0.001f)
+	public static Span<VisibilityPolygonPoint> Unique(
+		Span<VisibilityPolygonPoint> visibilityPolygonPoints,
+		float tolerance = Tolerance
+	)
 	{
 		int k = 0;
 		for (int i = 0; i < visibilityPolygonPoints.Length; i++)
@@ -52,7 +56,7 @@ internal struct VisibilityPolygonPoint
 }
 
 // Custom comparer for the class
-internal class VisibilityPolygonPointComparer : IEqualityComparer<VisibilityPolygonPoint>
+/*internal class VisibilityPolygonPointComparer : IEqualityComparer<VisibilityPolygonPoint>
 {
 	private float _tolerance;
 
@@ -83,4 +87,4 @@ internal class VisibilityPolygonPointComparer : IEqualityComparer<VisibilityPoly
 		//Calculate the hash code for the product.
 		return point.Position.GetHashCode() ^ point.Position.GetHashCode();
 	}
-}
+}*/

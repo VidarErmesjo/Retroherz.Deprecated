@@ -1,0 +1,166 @@
+CN:{X:0 Y:1} tNear:-7.562008E-05
+CN:{X:0 Y:1} tNear:-7.562008E-05
+CN:{X:0 Y:1} tNear:-1.0000756
+CN:{X:0 Y:1} tNear:-1.0000756
+CN:{X:0 Y:1} tNear:-2.0000756
+CN:{X:0 Y:1} tNear:-2.0000756
+CN:{X:0 Y:1} tNear:-1.6866318
+CN:{X:0 Y:1} tNear:-1.6866318
+CN:{X:0 Y:1} tNear:-1.8685657
+CN:{X:0 Y:1} tNear:-1.8685657
+CN:{X:0 Y:1} tNear:-2.1989849
+CN:{X:0 Y:1} tNear:-2.1989849
+CN:{X:0 Y:1} tNear:-2.5935884
+CN:{X:0 Y:1} tNear:-2.5935884
+CN:{X:0 Y:1} tNear:-3.5935864
+CN:{X:0 Y:1} tNear:-3.5935864
+CN:{X:0 Y:1} tNear:-4.593584
+CN:{X:0 Y:1} tNear:-4.593584
+CN:{X:0 Y:1} tNear:-5.593582
+CN:{X:0 Y:1} tNear:-5.593582
+CN:{X:0 Y:1} tNear:-6.5935802
+CN:{X:0 Y:1} tNear:-6.5935802
+CN:{X:0 Y:1} tNear:-7.593578
+CN:{X:0 Y:1} tNear:-7.593578
+CN:{X:0 Y:1} tNear:-7.2260704
+CN:{X:0 Y:1} tNear:-7.2260704
+CN:{X:0 Y:1} tNear:-7.096755
+CN:{X:0 Y:1} tNear:-7.096755
+CN:{X:0 Y:1} tNear:-7.119371
+CN:{X:0 Y:1} tNear:-7.119371
+CN:{X:0 Y:1} tNear:-8.119369
+CN:{X:0 Y:1} tNear:-8.119369
+CN:{X:0 Y:1} tNear:-9.119366
+CN:{X:0 Y:1} tNear:-9.119366
+CN:{X:0 Y:1} tNear:-10.119364
+CN:{X:0 Y:1} tNear:-10.119364
+CN:{X:0 Y:1} tNear:-11.119361
+CN:{X:0 Y:1} tNear:-11.119361
+CN:{X:0 Y:1} tNear:-12.119359
+CN:{X:0 Y:1} tNear:-12.119359
+CN:{X:0 Y:1} tNear:-13.119356
+CN:{X:0 Y:1} tNear:-13.119356
+CN:{X:0 Y:1} tNear:-14.119354
+CN:{X:0 Y:1} tNear:-14.119354
+CN:{X:0 Y:1} tNear:-15.119351
+CN:{X:0 Y:1} tNear:-15.119351
+CN:{X:0 Y:1} tNear:-16.119349
+CN:{X:0 Y:1} tNear:-16.119349
+CN:{X:0 Y:1} tNear:-17.119347
+CN:{X:0 Y:1} tNear:-17.119347
+CN:{X:0 Y:1} tNear:-18.119345
+CN:{X:0 Y:1} tNear:-18.119345
+CN:{X:0 Y:1} tNear:-19.119343
+CN:{X:0 Y:1} tNear:-19.119343
+CN:{X:0 Y:1} tNear:-20.119339
+CN:{X:0 Y:1} tNear:-20.119339
+CN:{X:0 Y:1} tNear:-21.119337
+CN:{X:0 Y:1} tNear:-21.119337
+CN:{X:0 Y:1} tNear:-22.119335
+CN:{X:0 Y:1} tNear:-22.119335
+CN:{X:0 Y:1} tNear:-23.119333
+CN:{X:0 Y:1} tNear:-23.119333
+CN:{X:0 Y:1} tNear:-24.11933
+CN:{X:0 Y:1} tNear:-24.11933
+CN:{X:0 Y:1} tNear:-25.119328
+CN:{X:0 Y:1} tNear:-25.119328
+CN:{X:0 Y:1} tNear:-26.119326
+CN:{X:0 Y:1} tNear:-26.119326
+CN:{X:0 Y:1} tNear:-27.119322
+CN:{X:0 Y:1} tNear:-27.119322
+CN:{X:0 Y:1} tNear:-28.11932
+CN:{X:0 Y:1} tNear:-28.11932
+CN:{X:0 Y:1} tNear:-29.119318
+CN:{X:0 Y:1} tNear:-29.119318
+CN:{X:0 Y:1} tNear:-30.119316
+CN:{X:0 Y:1} tNear:-30.119316
+CN:{X:0 Y:1} tNear:-31.119312
+CN:{X:0 Y:1} tNear:-31.119312
+CN:{X:0 Y:1} tNear:-32.119312
+CN:{X:0 Y:1} tNear:-32.119312
+CN:{X:0 Y:1} tNear:-33.11931
+CN:{X:0 Y:1} tNear:-33.11931
+CN:{X:0 Y:1} tNear:-34.119305
+CN:{X:0 Y:1} tNear:-34.119305
+CN:{X:0 Y:1} tNear:-35.119305
+CN:{X:0 Y:1} tNear:-35.119305
+CN:{X:0 Y:1} tNear:-36.1193
+CN:{X:0 Y:1} tNear:-36.1193
+CN:{X:0 Y:1} tNear:-37.119297
+CN:{X:0 Y:1} tNear:-37.119297
+CN:{X:0 Y:1} tNear:-38.119297
+CN:{X:0 Y:1} tNear:-38.119297
+CN:{X:0 Y:1} tNear:-39.119293
+CN:{X:0 Y:1} tNear:-39.119293
+CN:{X:0 Y:1} tNear:-40.119293
+CN:{X:0 Y:1} tNear:-40.119293
+CN:{X:0 Y:1} tNear:-41.11929
+CN:{X:0 Y:1} tNear:-41.11929
+CN:{X:0 Y:1} tNear:-42.119286
+CN:{X:0 Y:1} tNear:-42.119286
+CN:{X:0 Y:1} tNear:-43.119286
+CN:{X:0 Y:1} tNear:-43.119286
+CN:{X:0 Y:1} tNear:-44.11928
+CN:{X:0 Y:1} tNear:-44.11928
+CN:{X:0 Y:1} tNear:-45.119278
+CN:{X:0 Y:1} tNear:-45.119278
+CN:{X:0 Y:1} tNear:-46.119278
+CN:{X:0 Y:1} tNear:-46.119278
+CN:{X:0 Y:1} tNear:-47.119274
+CN:{X:0 Y:1} tNear:-47.119274
+CN:{X:0 Y:1} tNear:-48.11927
+CN:{X:0 Y:1} tNear:-48.11927
+CN:{X:0 Y:1} tNear:-49.11927
+CN:{X:0 Y:1} tNear:-49.11927
+CN:{X:0 Y:1} tNear:-1067.5248
+CN:{X:0 Y:1} tNear:-1067.5248
+
+"Worked"
+CN:{X:0 Y:1} tNear:-1.9371582E-05
+CN:{X:0 Y:1} tNear:-1.9371582E-05
+CN:{X:0 Y:1} tNear:-1.9371582E-05
+CN:{X:-1 Y:-0} tNear:-407.2919
+CN:{X:-1 Y:-0} tNear:-575.99774
+CN:{X:-1 Y:-0} tNear:-287.99887
+CN:{X:0 Y:1} tNear:-9.706825E-05
+CN:{X:0 Y:1} tNear:-9.706825E-05
+CN:{X:0 Y:1} tNear:-9.706825E-05
+CN:{X:-1 Y:-0} tNear:-407.2919
+CN:{X:0 Y:1} tNear:-7.667324E-06
+CN:{X:0 Y:1} tNear:-7.667324E-06
+CN:{X:0 Y:1} tNear:-7.667324E-06
+CN:{X:-0 Y:-1} tNear:-12688625
+
+/*
+-8 = NegativeInfinity
+
+Tunnelling! tNear:-1 tFar:28.603836 targetNear:{X:-814.5838 Y:-10.874048} targetFar:{X:407.2919 Y:28.603836}
+CN:{X:0 Y:1} tNear:-1
+Tunnelling! tNear:-1 tFar:10.874048 targetNear:{X:-407.2919 Y:-28.603836} targetFar:{X:814.5838 Y:10.874048}
+CN:{X:-0 Y:-1} tNear:-1
+Tunnelling! tNear:-1 tFar:26.39766 targetNear:{X:-8 Y:-11.355212} targetFar:{X:8 Y:26.39766}
+CN:{X:0 Y:1} tNear:-1
+Tunnelling! tNear:-1 tFar:26.39766 targetNear:{X:-8 Y:-11.355212} targetFar:{X:8 Y:26.39766}
+CN:{X:0 Y:1} tNear:-1
+Tunnelling! tNear:-1 tFar:26.39766 targetNear:{X:-8 Y:-11.355212} targetFar:{X:8 Y:26.39766}
+CN:{X:0 Y:1} tNear:-1
+Tunnelling! tNear:-1 tFar:11.355212 targetNear:{X:-8 Y:-26.39766} targetFar:{X:8 Y:11.355212}
+CN:{X:-0 Y:-1} tNear:-1
+Tunnelling! tNear:-1 tFar:24.334356 targetNear:{X:-8 Y:-11.837943} targetFar:{X:8 Y:24.334356}
+CN:{X:0 Y:1} tNear:-1
+
+Not setting timeHitNear = -1
+
+Tunnelling! tNear:-9.005397E-05 tFar:141.64255 targetNear:{X:-8 Y:-9.005397E-05} targetFar:{X:8 Y:141.64255}
+CN:{X:0 Y:1} tNear:-9.005397E-05
+Tunnelling! tNear:-9.005397E-05 tFar:141.64255 targetNear:{X:-8 Y:-9.005397E-05} targetFar:{X:8 Y:141.64255}
+CN:{X:0 Y:1} tNear:-9.005397E-05
+Tunnelling! tNear:-9.005397E-05 tFar:141.64255 targetNear:{X:-8 Y:-9.005397E-05} targetFar:{X:8 Y:141.64255}
+CN:{X:0 Y:1} tNear:-9.005397E-05
+Tunnelling! tNear:-1574500 tFar:1.0010408 targetNear:{X:-8 Y:-1574500} targetFar:{X:8 Y:1.0010408}
+CN:{X:-0 Y:-1} tNear:-1574500
+Tunnelling! tNear:-407.2919 tFar:-0 targetNear:{X:-6201013 Y:-407.2919} targetFar:{X:-0 Y:814.5838}
+CN:{X:0 Y:1} tNear:-407.2919
+Tunnelling! tNear:-814.5838 tFar:-0 targetNear:{X:-6201013 Y:-814.5838} targetFar:{X:-0 Y:407.2919}
+CN:{X:0 Y:1} tNear:-814.5838
+*/

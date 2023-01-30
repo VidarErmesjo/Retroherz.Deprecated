@@ -1,6 +1,6 @@
+using System;
 using System.Runtime.CompilerServices;
 using MonoGame.Extended;
-using MathD = System.Math;
 
 namespace Retroherz.Math;
 
@@ -34,7 +34,7 @@ public static class RayExtensions
 		// Are we in the correct (South-East) quadrant?
 		// ... then calculate out-of-bounds offset
 		(bool outOfBounds, Vector offset) state = (
-			outOfBounds: rectangle.Position.X <= 0 || rectangle.Position.Y <= 0,
+			outOfBounds: rectangle.Position.X < 0 || rectangle.Position.Y < 0,
 			offset: rectangle.Size - ray.Origin
 		);
 
@@ -55,14 +55,14 @@ public static class RayExtensions
 		Vector targetNear = (rectangle.Position - ray.Origin) * inverseDirection;
 		Vector targetFar = (rectangle.Position + rectangle.Size - ray.Origin) * inverseDirection;
 
-		// YouTube commment: DMSG1981
-		//targetFar.X = ray.Direction.X != 0 ? (rectangle.Position.X - ray.Origin.X) / ray.Direction.X : (rectangle.Position.X - ray.Origin.X) >= 0 ? float.PositiveInfinity : float.NegativeInfinity;
-		//targetFar.Y = ray.Direction.Y != 0 ? (rectangle.Position.Y - ray.Origin.Y) / ray.Direction.Y : (rectangle.Position.Y - ray.Origin.Y) >= 0 ? float.PositiveInfinity : float.NegativeInfinity;
-		//targetNear.X = ray.Direction.X != 0 ? (rectangle.Position.X + rectangle.Size.X - ray.Origin.X) / ray.Direction.X : (rectangle.Position.X + rectangle.Size.X - ray.Origin.X) > 0 ? float.PositiveInfinity : float.NegativeInfinity;
-		//targetNear.Y = ray.Direction.Y != 0 ? (rectangle.Position.Y + rectangle.Size.Y - ray.Origin.Y) / ray.Direction.Y : (rectangle.Position.Y + rectangle.Size.Y - ray.Origin.Y) > 0 ? float.PositiveInfinity : float.NegativeInfinity;
-
 		if (float.IsNaN(targetFar.X) || float.IsNaN(targetFar.Y)) return false;
 		if (float.IsNaN(targetNear.X) || float.IsNaN(targetNear.Y)) return false;
+
+		/*if (float.IsNegativeInfinity(targetNear.X) || float.IsNegativeInfinity(targetNear.Y))
+			Console.WriteLine($"Negative Infinity: {targetNear} direction:{ray.Direction}");
+
+		if (float.IsPositiveInfinity(targetFar.X) || float.IsPositiveInfinity(targetFar.Y))
+			Console.WriteLine($"Positive Infinity: {targetFar} direction:{ray.Direction}");*/
 
 		// Sort distances
 		if (targetNear.X > targetFar.X) Utils.Swap(ref targetNear.X, ref targetFar.X);
@@ -72,11 +72,13 @@ public static class RayExtensions
 		if (targetNear.X > targetFar.Y || targetNear.Y > targetFar.X) return false;
 
 		// Closest 'time' will be the first contact
-		timeHitNear = MathD.Max(targetNear.X, targetNear.Y);
+		timeHitNear = MathF.Max(targetNear.X, targetNear.Y);
+
+		//if (timeHitNear < 0) Console.WriteLine("Tunnelling!");
 
 		// Furthest 'time' is contact on opposite side of rectangle
-		timeHitFar = MathD.Min(targetFar.X, targetFar.Y);
-		
+		timeHitFar = MathF.Min(targetFar.X, targetFar.Y);
+
 		// Reject if ray directon is pointing away from object (can be usefull)
 		// Added option - VE
 		if (!infinite && timeHitFar < 0) return false;
@@ -141,6 +143,28 @@ public static class RayExtensions
 		out Vector contactNormal
 	)
 	{
+		float timeHitNear;
+		float timeHitFar;
+
+		return Intersects(
+			ray,
+			(rectangle.Position, rectangle.Size),
+			out contactPoint,
+			out contactNormal,
+			out timeHitNear,
+			out timeHitFar,
+			infinite: true
+		);
+	}
+
+    /// <summary>
+    /// Returns true if ray intersects rectangle.
+    /// </summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public static bool Intersects(this Ray ray,	(Vector Position, Vector Size) rectangle)
+	{
+		Vector contactPoint;
+		Vector contactNormal;
 		float timeHitNear;
 		float timeHitFar;
 

@@ -35,7 +35,7 @@ public class PointLightComponent
 	/// </summary>
 	public float Power { get; set; }
 
-	public PointLightComponent(float radius, Color color, float power = 1)
+	public PointLightComponent(float radius = 1, Color color = default(Color), float power = 1)
 	{
 		Radius = radius;
 		Color = color;

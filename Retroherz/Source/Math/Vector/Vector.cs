@@ -215,6 +215,12 @@ public struct Vector : IEquatable<Vector>
 		public static float Dot(Vector u, Vector v) => (u.X * v.X + u.Y * v.Y);
 
 		/// <summary>
+		/// Returns the hypothenuse of the vectors u and v.
+		/// </summary>    
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static float Hypothenuse(Vector u, Vector v) => Dot(u - v, u - v);
+
+		/// <summary>
 		/// Returns a slightly shortened version of the vector.
 		/// </summary>      
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -228,6 +234,7 @@ public struct Vector : IEquatable<Vector>
 			// From http://paulbourke.net/geometry/lineline2d/
 			float s = ((p4.X - p3.X) * (p1.Y - p3.Y) - (p4.Y - p3.Y) * (p1.X - p3.X))
 					/ ((p4.Y - p3.Y) * (p2.X - p1.X) - (p4.X - p3.X) * (p2.Y - p1.Y));
+
 			return new(p1.X + s * (p2.X - p1.X), p1.Y + s * (p2.Y - p1.Y));
 		}
 
@@ -247,6 +254,16 @@ public struct Vector : IEquatable<Vector>
 		/// </summary>    
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static Vector Mix(Vector u, Vector v) => new(MathF.Min(u.X, v.X), MathF.Min(u.Y, v.Y));
+
+		/// <summary>
+		///	Returns the product from projecting vector u onto vector v.
+		///	</summary>
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		public static Vector Project(Vector u, Vector v)
+		{
+			float k = Dot(u, v) / Dot(v, v);
+			return new(k * v.X, k * v.Y);
+		}
 
 		/// <summary>
 		/// Returns a random unit vector.
