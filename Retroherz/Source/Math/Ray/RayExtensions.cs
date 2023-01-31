@@ -33,18 +33,18 @@ public static class RayExtensions
 
 		// Are we in the correct (South-East) quadrant?
 		// ... then calculate out-of-bounds offset
-		(bool outOfBounds, Vector offset) state = (
-			outOfBounds: rectangle.Position.X < 0 || rectangle.Position.Y < 0,
-			offset: rectangle.Size - ray.Origin
+		(bool IsOutOfBounds, Vector Offset) state = (
+			IsOutOfBounds: rectangle.Position.X < 0 || rectangle.Position.Y < 0,
+			Offset: rectangle.Size - ray.Origin
 		);
 
 		// To not confuse the algorithm on off-grid bounds we shift rectangle position and ray origin
 		// to force upcomming calculations over to the positive axes.
 		// - VE
-		if (state.outOfBounds)
+		if (state.IsOutOfBounds)
 		{
-			rectangle.Position += state.offset;
-			ray.Origin += state.offset;
+			rectangle.Position += state.Offset;
+			ray.Origin += state.Offset;
 			//System.Console.WriteLine("Out of bounds!");
 		}
 
@@ -85,7 +85,7 @@ public static class RayExtensions
 
 		// For a correct calculation of contact point we shift ray origin back to the original value
 		// - VE
-		if (state.outOfBounds) ray.Origin -= state.offset;
+		if (state.IsOutOfBounds) ray.Origin -= state.Offset;
 
 		// Contact point of collision from parametric line equation
 		contactPoint = ray.Origin + timeHitNear * ray.Direction;
@@ -112,7 +112,7 @@ public static class RayExtensions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool Intersects(
 		this Ray ray,
-		(Vector Position, Vector Size) rectangle,
+		ref (Vector Position, Vector Size) rectangle,
 		out Vector contactPoint,
 		out Vector contactNormal,
 		out float timeHitNear
@@ -138,7 +138,7 @@ public static class RayExtensions
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool Intersects(
 		this Ray ray,
-		RectangleF rectangle,
+		ref RectangleF rectangle,
 		out Vector contactPoint,
 		out Vector contactNormal
 	)

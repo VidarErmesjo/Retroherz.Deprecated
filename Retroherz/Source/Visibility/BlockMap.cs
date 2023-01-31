@@ -26,7 +26,7 @@ public ref struct BooleanMap
 }
 
 ///	<summary>
-///	Represents a tile map. Based on <see cref="SpanArray" />.
+///	Represents a tile map. Based on <see cref="Liste" />.
 ///	</summary>
 public ref struct TileMap
 {
@@ -55,7 +55,7 @@ public ref struct TileMap
 		TileWidth = tileWidth;
 		TileHeight = tileHeight;
 
-		_tiles =  new Span<TiledMapTile>(tiles);
+		_tiles = tiles.AsSpan();
 	}
 
 	public TiledMapTile this[int x, int y]
@@ -63,11 +63,19 @@ public ref struct TileMap
 		get => _tiles[y * this.Width + x];
 		set => _tiles[y * this.Width + x] = value;
 	}
+
+	public bool IsBlank(int x, int y)
+	{
+		// Return false if index out of bounds ("nothing is something").
+		if (x < 0 || y < 0 || x > this.Width - 1 || y > this.Height - 1) return false;
+
+		return this[x, y].IsBlank ? true : false;
+	}
 }
 
 public struct Block
 {
-	public Vector Position = new();// default(Vector);
+	public Vector Position = default(Vector);
 	public Vector Size = default(Vector);
 
 	public Block(Vector position, Vector size)
@@ -77,43 +85,25 @@ public struct Block
 	}
 }
 
-public struct BlockMap
-{
-	//public Sekk<(Vector Position, Vector Size)> Blocks;
-
-	//public BlockMap(int size) => Blocks = new Sekk<(Vector Position, Vector Size)>(size);
-}
-
 public enum TileType
 {
 	Empty,
 	Solid
 }
 
-public struct Region
-{
-	public Vector First = default(Vector);
-	public Vector Last = default(Vector);
-	//public TileType Type;
-	public bool IsBlank = false;
-
-	public Region(Vector first, Vector last, bool isBlank)
-	{
-		First = first;
-		Last = last;
-		IsBlank = isBlank;
-	}
-}
-
 public static partial class VisibilityExtensions
 {
 	private static Sekk<Block> _blocks = new Sekk<Block>();
-	private static Sekk<Region> _regions = new Sekk<Region>();
+
+	private const ushort NORTH = 0;
+	private const ushort EAST = 1;
+	private const ushort SOUTH = 2;
+	private const ushort WEST = 3;
 
 	/// <summary>
 	///	Convert Tiled map to "BlockMap".
 	/// </summary>
-	public static Sekk<BlockMap> CreateBlockMap(this TiledMap tiledMap, string layerName) => CreateBlockMap(
+	public static Sekk<Block> CreateBlockMap(this TiledMap tiledMap, string layerName) => CreateBlockMap(
 		tiledMap.GetLayer<TiledMapTileLayer>(layerName).Tiles,
 		tiledMap.GetLayer<TiledMapTileLayer>(layerName).Width,
 		tiledMap.GetLayer<TiledMapTileLayer>(layerName).Height,
@@ -124,7 +114,7 @@ public static partial class VisibilityExtensions
 	/// <summary>
 	///	Convert Tiled map to "BlockMap".
 	/// </summary>
-	public static Sekk<BlockMap> CreateBlockMap(this TiledMap tiledMap, ushort layer = 0) => CreateBlockMap(
+	public static Sekk<Block> CreateBlockMap(this TiledMap tiledMap, ushort layer = 0) => CreateBlockMap(
 		tiledMap.TileLayers[layer].Tiles,
 		tiledMap.TileLayers[layer].Width,
 		tiledMap.TileLayers[layer].Height,
@@ -132,7 +122,7 @@ public static partial class VisibilityExtensions
 		tiledMap.TileLayers[layer].TileHeight
 	);
 
-	private static Sekk<BlockMap> CreateBlockMap(
+	private static Sekk<Block> CreateBlockMap(
 		TiledMapTile[] tiles,
 		int width,
 		int height,
@@ -141,78 +131,40 @@ public static partial class VisibilityExtensions
 	)
 	{
 		TileMap tileMap = new TileMap(tiles, width, height, tileWidth, tileHeight);
-		SpanArray<bool> taken = new SpanArray<bool>(width, height);
+		Liste<bool> taken = new Liste<bool>(width, height);
 
 		// Clear the "BlockMap".
 		_blocks.Clear();
 
-		for (int y = 0; y < tileMap.Width; ++y)
-			for (int x = 0; x < tileMap.Height; ++x)
+		Span<bool> exists = stackalloc bool[4];
+		Span<Vector> block = stackalloc Vector[2];
+
+		// Rules:
+		// 1. Ignore all tiles with four neighbours.
+		for (int y = 0; y < tileMap.Width; y++)
+			for (int x = 0; x < tileMap.Height; x++)
 			{
-				if (taken[x, y] || tileMap[x, y].IsBlank)
+				// Ignore tile if it does not exist.
+				if (tileMap[x, y].IsBlank)
 					continue;
 
-				// Here we go.
-				(int X, int Y) first, last;
-				bool isBlank = false;
+				// Inspect neighbours.	
+				exists[NORTH] = !tileMap.IsBlank(x, y - 1);
+				exists[EAST] = !tileMap.IsBlank(x + 1, y);
+				exists[SOUTH] = !tileMap.IsBlank(x, y + 1);
+				exists[WEST] = !tileMap.IsBlank(x - 1, y);
 
-				// Start region from here.
-				last = first = (x, y);
-				isBlank = tileMap[x, y].IsBlank;
-				taken[x, y] = true;
+				// Ignore tile if it has all four neighbours.
+				if (exists[NORTH] && exists[EAST] && exists[SOUTH] && exists[WEST])
+					continue;
 
-				// Search right as far as we can go.
-				for (int i = x; i < tileMap.Width; ++i)
-				{
-					// Update last if the tile type is free and of the same brand.
-					if (tileMap[i, y].IsBlank == tileMap[x, y].IsBlank && !taken[i, y])
-					{
-						last = (i, y);
-						taken[i, y] = true;
-					}
-					else
-					{
-						// Rightwards expansion has ended. Now search row below.
-						for (int j = y; j < tileMap.Height; ++j)
-						{
-						//check then row below the previously added row
-                        //from rc->first_tile.x to rc->last_tile.x on the
-                        // y + y2 line. If all are same then make each
-                        // of them taken and make the y + y2 as rc->last_tile.y
-                        // if there's a difference then break
-
-							// ... as far as we got.
-							if (taken[i, j])
-								break;
-
-							for (int k = first.X; k < last.X; ++k)
-							{
-								if (tileMap[k, j].IsBlank == isBlank)
-								{
-									last.Y = j;
-									taken[k, j] = true;
-								}
-								else break;
-							}
-						}
-
-						break;
-					}
-				}
-
-				// Add what we got!
-				if (!isBlank)
-					_regions.Add(new Region(first, last, true));
+				// Create block with position and size.
+				block[0] = new Vector(x * tileMap.TileWidth, y * tileMap.TileHeight);
+				block[1] = new Vector(tileMap.TileWidth, tileMap.TileHeight);
+				_blocks.Add(new Block(position: block[0], size: block[1]));
 			}
 
-		// Assemble the "BlockMap".
 
-		foreach (Region region in _regions)
-			_blocks.Add(new Block(region.First, region.Last - region.First));
-
-		foreach (Block block in _blocks)
-			Console.WriteLine($"Position:{block.Position} Size:{block.Size}");
-
-		return new();
+		return _blocks;
 	}
 }

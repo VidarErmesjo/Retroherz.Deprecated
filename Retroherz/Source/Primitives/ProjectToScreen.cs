@@ -8,7 +8,7 @@ namespace Retroherz;
 public static partial class PrimitiveExtensions
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Primitive ProjectToScreen(this Primitive primitive, OrthographicCamera camera)
+	public static Primitive ProjectToScreen(this Primitive primitive, in OrthographicCamera camera)
 	{
 		Span<VertexPositionTexture> vertices = stackalloc VertexPositionTexture[primitive.Vertices.Length];
 		Span<short> indices = stackalloc short[primitive.Indices.Length];

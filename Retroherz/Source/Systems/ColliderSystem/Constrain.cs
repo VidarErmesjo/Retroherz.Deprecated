@@ -1,4 +1,4 @@
-using System;
+/*using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Linq;
@@ -46,11 +46,11 @@ public partial class ColliderSystem
 					if (contactTime >= 0f && contactTime < 1f)
 			{
 				// Resolve diagonal freak case (single contact).
-				/*if (contactNormal == Vector2.Zero && subject.collider.Constraints.Count == 1)
+				if (contactNormal == Vector2.Zero && subject.collider.Constraints.Count == 1)
 				{
 					contactNormal = Vector2.Clamp(-subject.collider.Velocity, -Vector2.One, Vector2.One);
 					System.Console.WriteLine("Diagonal!");
-				}*/
+				}
 
 				var force = contactNormal * subject.collider.DeltaHalfExtents;// * (1 - MathF.Abs(contactTime));
 				//force = contactNormal * Vector2.One;
@@ -59,14 +59,9 @@ public partial class ColliderSystem
 
 				System.Console.WriteLine($"F:{force} CN:{contactNormal} T:{contactTime}");
 
-				/*subject.collider.Velocity += contactNormal * new Vector2(
-					MathF.Abs(subject.collider.Velocity.X),
-					MathF.Abs(subject.collider.Velocity.Y)
-					) * (1 - contactTime);*/
-
 				//return true;
 			}
 
 		//return false;
 	}
-}
+}*/

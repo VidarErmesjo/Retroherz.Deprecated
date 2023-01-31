@@ -6,10 +6,10 @@ namespace Retroherz.Math;
 /// </summary>
 public struct Ray : IEquatable<Ray>
 {
-	public Vector Origin;
-	public Vector Direction;
+	public Vector Origin = default(Vector);
+	public Vector Direction = default(Vector);
 
-	public Ray(Vector origin = default(Vector), Vector direction = default(Vector))
+	public Ray(Vector origin, Vector direction)
 	{
 		Direction = direction;
 		Origin = origin;	

@@ -40,10 +40,8 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 	public readonly Sekk<int> Occluders = new Sekk<int>();
 	public readonly Sekk<int> Illumers = new Sekk<int>();
 
-	//public readonly MemoryPool<Vector> vectors;
-
 	public ShadowsSystem(GraphicsManager graphicsManager, TiledMap tiledMap)
-		: base(Aspect.All(typeof(ColliderComponent), typeof(TransformComponent)))
+		: base(Aspect.All(typeof(ColliderComponent), typeof(SpriteComponent), typeof(TransformComponent)))
 	{
 		_camera = graphicsManager.GetCamera();
 		_destinationRectangle = graphicsManager.DestinationRectangle;
@@ -73,7 +71,7 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 		Illumers.Clear();
 
 		// "Query"
-		foreach (int entityId in ActiveEntities.AsReadOnlySpan())
+		foreach (ref readonly int entityId in ActiveEntities.AsReadOnlySpan())
 		{
 			Occluders.Add(entityId);
 
@@ -84,7 +82,7 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 		}
 
 		// Process "Illumer".
-		foreach (int illumerId in Illumers)
+		foreach (ref readonly int illumerId in Illumers)
 		{
 			(ColliderComponent Collider, PointLightComponent Light, TransformComponent Transform) illumer = (
 				_colliderComponentMapper.Get(illumerId),
@@ -98,7 +96,7 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 			);
 
 			// Add "Occluders".
-			foreach (int occluderId in Occluders)
+			foreach (ref readonly int occluderId in Occluders)
 			{
 				if (occluderId == illumerId)
 					continue;
@@ -156,13 +154,16 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 		_graphics.DepthStencilState = DepthStencilState.None;
 		_graphics.RasterizerState = RasterizerState.CullNone;
 
-		foreach (int illumerId in Illumers)
+		foreach (ref readonly int illumerId in Illumers)
 		{
 			(ColliderComponent Collider, PointLightComponent Light, TransformComponent Transform) illumer = (
 				_colliderComponentMapper.Get(illumerId),
 				_pointLightComponentMapper.Get(illumerId),
 				_transformComponentMapper.Get(illumerId)
 			);
+
+			if (illumer.Light.Power <= 0)
+				continue;
 
 			// Apply the effect
 			_effect.Light.Parameters["lightSource"].SetValue(illumer.Transform.Position + illumer.Collider.HalfExtents);

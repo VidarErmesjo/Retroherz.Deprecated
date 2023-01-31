@@ -18,7 +18,7 @@ public static class VectorExtensions
 	/// Returns the angle between vectors u and v in radians.
 	/// </summary>    
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float Angle(this Vector u, Vector v) => (MathF.Atan2(v.Y - u.Y, v.X - u.X));
+	public static float Angle(this Vector u, in Vector v) => (MathF.Atan2(v.Y - u.Y, v.X - u.X));
 
 	/// <summary>
 	/// Returns a clamped copty of the vector.
@@ -58,7 +58,7 @@ public static class VectorExtensions
 	/// Returns the dot product of vector u and v.
 	/// </summary> 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float Dot(this Vector u, Vector v) => (u.X * v.X + u.Y * v.Y); 
+	public static float Dot(this Vector u, in Vector v) => (u.X * v.X + u.Y * v.Y); 
 
 	/// <summary>
 	/// Returns a downwards rounded copy of vector.
@@ -70,19 +70,13 @@ public static class VectorExtensions
 	/// Returns a slightly shortened version of the vector.
 	/// </summary>      
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector Interpolate(this Vector u, Vector v, float value) => new(u * (1 - value) + v * value);
+	public static Vector Interpolate(this Vector u, in Vector v, in float value) => new(u * (1 - value) + v * value);
 
 	/// <summary>
 	/// Returns true if vector components are NaN (Not a Number).
 	/// </summary> 
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	public static bool IsNaN(this Vector vector) => float.IsNaN(vector.X) || float.IsNaN(vector.Y);
-
-	/// <summary>
-	/// Returns the magnitude (length) of the vector.
-	/// </summary> 
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static float Magnitude(this Vector vector) => MathF.Sqrt(vector.X * vector.X + vector.Y * vector.Y);
 
 	/// <summary>
 	/// Returns a normalized copy of the vector.
@@ -105,13 +99,13 @@ public static class VectorExtensions
 	/// Sets the X component of the vector.
 	/// </summary>    
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector SetX(this Vector vector, float x) => new(x, vector.Y);
+	public static Vector SetX(this Vector vector, in float x) => new(x, vector.Y);
 
 	/// <summary>
 	/// Sets the Y component of the vector.
 	/// </summary>    
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Vector SetY(this Vector vector, float y) => new(vector.X, y);
+	public static Vector SetY(this Vector vector, in float y) => new(vector.X, y);
 
 	/// <summary>
 	/// Returns the angle of the vector in radians.

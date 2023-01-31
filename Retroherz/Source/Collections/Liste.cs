@@ -4,8 +4,9 @@ namespace Retroherz.Collections;
 
 ///	<summary>
 ///	An array based on <see cref="Span" />.
+/// EXPERIMENTAL. DO NOT USE!
 ///	</summary>
-public ref struct SpanArray<T> where T: struct
+public ref struct Liste<T> where T: struct
 {
 	private readonly Span<T> _data;
 	private readonly int _width;
@@ -15,11 +16,11 @@ public ref struct SpanArray<T> where T: struct
 	public void Fill(T value) => _data.Fill(value);
 	public int Length => _data.Length;
 
-	public SpanArray(int length) => new SpanArray<T>(length, 1);
+	public Liste(int length) => new Liste<T>(length, 1);
 
-	public SpanArray(int width, int height)
+	public Liste(int width, int height)
 	{
-		_data = new T[width * height];
+		_data = new T[width * height].AsSpan();
 		_width = width;
 		_height = height;
 	}

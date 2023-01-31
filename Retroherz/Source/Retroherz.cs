@@ -129,7 +129,7 @@ File name: 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Re
 				actor.Attach(new TransformComponent(position: position));
 				actor.Attach(new ColliderComponent(velocity: velocity, size: size, type: ColliderComponentType.Dynamic));
 				actor.Attach(new RayComponent(radius: randomSize * 2));
-				actor.Attach(new PointLightComponent(radius: size.Magnitude() * 2, color: Color.CornflowerBlue));
+				actor.Attach(new PointLightComponent(radius: size.Magnitude() * 2, color: Color.DarkGoldenrod));
 
 
 				tiles.Remove(tile);
@@ -245,7 +245,7 @@ File name: 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Re
 			var coolNames = new List<string> {"Halsbrann Sivertsen", "Salman Rushtid"};
 
 			CreatePlayer();
-			//CreateActors(50);
+			CreateActors(25);
 
 			var actor = world.CreateEntity();
 			actor.Attach(new TransformComponent(position: Vector.One * 16 * 10));

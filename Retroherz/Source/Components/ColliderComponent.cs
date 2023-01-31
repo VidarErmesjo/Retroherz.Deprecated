@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using MonoGame.Extended;
 using MonoGame.Extended.Collections;
+using Retroherz.Collections;
 using Retroherz.Math;
 
 namespace Retroherz.Components;
@@ -83,7 +84,7 @@ public class ColliderComponent
 	private Vector _previousSize = default(Vector);
 
 	public readonly Bag<Constraint> Constraints = new();
-	public readonly Bag<(int Id, Vector ContactPoint, Vector ContactNormal, float ContactTime)> Contacts = new();
+	public readonly Sekk<(int Id, Vector ContactPoint, Vector ContactNormal, float ContactTime)> Contacts = new();
 
 	public (Vector Position, Vector Direction)[] Rays = new (Vector, Vector)[4];
 

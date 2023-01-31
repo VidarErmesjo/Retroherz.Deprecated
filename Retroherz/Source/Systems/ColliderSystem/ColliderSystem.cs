@@ -38,9 +38,9 @@ public partial class ColliderSystem : EntityUpdateSystem
 
 	public override void Update(GameTime gameTime)
 	{
-		var deltaTime = gameTime.GetElapsedSeconds();
+		float deltaTime = gameTime.GetElapsedSeconds();
 
-		foreach (int entityId in ActiveEntities.AsReadOnlySpan())
+		foreach (ref readonly int entityId in ActiveEntities.AsReadOnlySpan())
 		{
 			(ColliderComponent collider, MetaComponent meta, TransformComponent transform) ego = (
 				_colliderComponentMapper.Get(entityId),
@@ -88,13 +88,13 @@ public partial class ColliderSystem : EntityUpdateSystem
 				false
 			);
 
-			foreach(int obstacleId in ActiveEntities.AsReadOnlySpan())	// OPT??
+			foreach(ref readonly int obstacleId in ActiveEntities.AsReadOnlySpan())	// OPT??
 			//foreach (var obstacleId in ActiveEntities.Where(id => id != entityId))
 			{
 				if (obstacleId == entityId)
 					continue;
 
-				(ColliderComponent collider, TransformComponent transform) obstacle = new(
+				(ColliderComponent collider, TransformComponent transform) obstacle = (
 					_colliderComponentMapper.Get(obstacleId),
 					_transformComponentMapper.Get(obstacleId)
 				);
@@ -117,7 +117,7 @@ public partial class ColliderSystem : EntityUpdateSystem
 			// Work out collisions ...
 			ego.collider.Constraints.Clear();
 			ego.collider.Contacts.Clear();
-			foreach (int obstacleId in Obstacles)
+			foreach (ref readonly int obstacleId in Obstacles)
 			{
 				(ColliderComponent collider, TransformComponent transform) obstacle = (
 					_colliderComponentMapper.Get(obstacleId),
@@ -163,7 +163,7 @@ public partial class ColliderSystem : EntityUpdateSystem
 				// Resolve all constraints (hopefully)
 				foreach (var constraint in constraints)
 				{
-					(ColliderComponent collider, TransformComponent transform) obstacle = new(
+					(ColliderComponent collider, TransformComponent transform) obstacle = (
 						_colliderComponentMapper.Get(constraint.Id),
 						_transformComponentMapper.Get(constraint.Id)
 					);
@@ -181,13 +181,15 @@ public partial class ColliderSystem : EntityUpdateSystem
 			if (ego.collider.Contacts.Count > 0)
 			{
 				// Do the sort
-				var contacts = ego.collider.Contacts.AsSpan();
-				contacts.Sort((a, b) => a.ContactTime < b.ContactTime ? -1 : 1 );
+				//var contacts = ego.collider.Contacts.AsSpan();
+				//contacts.Sort((a, b) => a.ContactTime < b.ContactTime ? -1 : 1 );
+				ego.collider.Contacts.Sort((a, b) => a.ContactTime < b.ContactTime ? -1 : 1);
 
 				// Now resolve the collision in correct order (shortest time)
-				foreach (var contact in contacts)
+				foreach (ref readonly var contact in ego.collider.Contacts)
+				//foreach (ref readonly var contact in contacts)
 				{
-					(ColliderComponent collider, TransformComponent transform) obstacle = new(
+					(ColliderComponent collider, TransformComponent transform) obstacle = (
 						_colliderComponentMapper.Get(contact.Id),
 						_transformComponentMapper.Get(contact.Id)
 					);

@@ -36,7 +36,7 @@ public class Sekk<T>: IEquatable<Sekk<T>> where T: unmanaged
 	///	<summary>
 	///	Construct a collection with a given capacity.
 	///	</summary>
-	public Sekk(int size = 16)
+	public Sekk(in int size = 16)
 	{
 		_data = new T[size];
 		_count = 0;
@@ -45,29 +45,35 @@ public class Sekk<T>: IEquatable<Sekk<T>> where T: unmanaged
 	/// <summary>
 	///	Indexer of the collection.
 	/// </summary>
-	public T this[int i]
+	public T this[in int index]
 	{
-		get => (i < _count) ? _data.Span[i] : throw new IndexOutOfRangeException();
-		set => _data.Span[i] = (i < _count) ? value : throw new IndexOutOfRangeException();
+		get => (index < _count) ? _data.Span[index] : throw new IndexOutOfRangeException();
+		set => _data.Span[index] = (index < _count) ? value : throw new IndexOutOfRangeException();
 	}
 
 	/// <summary>
-	///	Add an element to the collection.
+	///	Add an value to the collection.
 	/// </summary>
-	public void Add(T element)
+	public void Add(in T value)
 	{
 		// Resize collection if needed.
 		if (_data.Length < _count + 1)
 		{
 			int size = _data.Length * 2;
+
+			// Cache data.
 			Span<T> temp = stackalloc T[size];
 			_data.Span.CopyTo(temp);
-			_data = new T[size];
+
+			// Resize and restore data.
+			_data = new T[size].AsMemory();
+			temp.CopyTo(_data.Span);
+
 			Console.WriteLine($"Resized [{size}]");
 		}
 
-		// Add the element.
-		_data.Span[_count] = element;
+		// Add the value.
+		_data.Span[_count] = value;
 
 		// Increment the counter.
 		_count++;
@@ -76,7 +82,7 @@ public class Sekk<T>: IEquatable<Sekk<T>> where T: unmanaged
 	/// <summary>
 	///	Searches an entire sorted collection for a specified value using the specified TComparer generic type.
 	///	<summary>
-	public int BinarySearch(T value, IComparer<T> comparer) => (
+	public int BinarySearch(in T value, IComparer<T> comparer) => (
 		_data.Slice(0, _count).Span.BinarySearch(value, comparer)
 	);
 
@@ -90,18 +96,18 @@ public class Sekk<T>: IEquatable<Sekk<T>> where T: unmanaged
 	///	<summary>
 	///	Searches an entire sorted Scollection for a value using the specified TComparable  generic type.
 	/// </summary>
-	public int BinarySearch(T value, IComparable<T> comparable) => (
+	public int BinarySearch(in T value, IComparable<T> comparable) => (
 		_data.Slice(0, _count).Span.BinarySearch<T, IComparable<T>>(comparable)
 	);
 
 	/// <summary>
-	///	Searches an entire one-dimensional sorted array for a specific element,
-	/// using the IComparable generic interface implemented by each element of the Array and by the specified object.
+	///	Searches an entire one-dimensional sorted array for a specific value,
+	/// using the IComparable generic interface implemented by each value of the Array and by the specified object.
 	/// </summary>
 	///	<remarks>
-	///	Remarks< Because a call to the ToArray method performs a heap allocation, it should generally be avoided.
+	///	Because a call to the ToArray method performs a heap allocation, it should generally be avoided.
 	///	</remarks>
-	public int BinarySearch(T value) => (
+	public int BinarySearch(in T value) => (
 		Array.BinarySearch<T>(_data.Slice(0, _count).ToArray(), value)
 	);
 
@@ -115,40 +121,40 @@ public class Sekk<T>: IEquatable<Sekk<T>> where T: unmanaged
 	}
 
 	///	<summary>
-	///	Returns true if the collecton includes the specified element.
+	///	Returns true if the collecton includes the specified value.
 	///	</summary>
-	public bool Contains(T element) => this.Find(element) < 0 ? false : true;
+	public bool Contains(in T value) => this.Find(value) < 0 ? false : true;
 
 	///	<summary>
 	///	Copies the contents of this collection into a destination Memory.
 	///	</summary>
-	public void CopyTo(Memory<T> destination) => _data.Slice(0, _count).CopyTo(destination);
+	public void CopyTo(in Memory<T> destination) => _data.Slice(0, _count).CopyTo(destination);
 
 	///	<summary>
 	///	Copies the contents of this collection into a destination Span.
 	///	</summary>
-	public void CopyTo(Span<T> destination) => _data.Slice(0, _count).Span.CopyTo(destination);
+	public void CopyTo(in Span<T> destination) => _data.Slice(0, _count).Span.CopyTo(destination);
 
 	///	<summary>
 	///	Copies the contents of this collection into a destination collection.
 	///	</summary>
-	public void CopyTo(Sekk<T> destination) => _data.Slice(0, _count).CopyTo(destination._data);
+	public void CopyTo(in Sekk<T> destination) => _data.Slice(0, _count).CopyTo(destination._data);
 
 	/// <summary>
 	///	Fills the elements of this collection with a specified value.
 	///	</summary>
-	public void Fill(T value) => _data.Span.Fill(value);
+	public void Fill(in T value) => _data.Span.Fill(value);
 
 	///	<summary>
-	///	Search for an element in the collection.
+	///	Search for an value in the collection.
 	///	</summary>
 	///	<returns>
-	///	Index of specified element.
+	///	Index of specified value.
 	/// </returns>
-	public int Find(T element)
+	public int Find(in T value)
 	{
 		for (int i = 0; i < this.Count; i++)
-			if (element.Equals(_data.Span[i]))
+			if (value.Equals(_data.Span[i]))
 				return i;
 
 		return -1;
@@ -168,16 +174,16 @@ public class Sekk<T>: IEquatable<Sekk<T>> where T: unmanaged
 	public void Sort(Comparison<T> comparison) => _data.Slice(0, _count).Span.Sort(comparison);
 
 	/// <summary>
-	///	Removes the element at the specified index from the collection.
+	///	Removes the value at the specified index from the collection.
 	/// </sumary>
 	/// <returns>
-	///	The removed element.
+	///	The removed value.
 	/// </returns>
-	public T Remove(int index)
+	public T Remove(in int index)
 	{
 		T removed = _data.Span[index];
 
-		// Last element gets freed position.
+		// Last value gets freed position.
 		_data.Span[index] = _data.Span[_count - 1];
 
 		_count--;
@@ -186,14 +192,14 @@ public class Sekk<T>: IEquatable<Sekk<T>> where T: unmanaged
 	}
 
 	/// <summary>
-	///	Removes the specified element from the collection.
+	///	Removes the specified value from the collection.
 	/// </sumary>
 	/// <returns>
-	///	The removed element.
+	///	The removed value.
 	///	</returns>
-	public T Remove(T element)
+	public T Remove(in T value)
 	{
-		int index = this.Find(element);
+		int index = this.Find(value);
 
 		T removed = _data.Span[index];
 

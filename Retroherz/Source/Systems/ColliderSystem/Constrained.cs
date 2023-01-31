@@ -1,4 +1,4 @@
-using System;
+/*using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Linq;
@@ -79,4 +79,4 @@ public partial class ColliderSystem
 
 		return subject.collider.Contacts.Count > 0 ? true : false;
 	}
-}
+}*/

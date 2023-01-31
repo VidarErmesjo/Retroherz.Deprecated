@@ -10,7 +10,7 @@ namespace Retroherz;
 public static partial class PrimitiveExtensions
 {
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public static Primitive CreateTriangleFan(this Primitive primitive, ReadOnlySpan<Vector> points, Vector origin)
+	public static Primitive CreateTriangleFan(this Primitive primitive, in ReadOnlySpan<Vector> points, in Vector origin)
 	{
 		if (points.Length < 1)
 			return primitive;
