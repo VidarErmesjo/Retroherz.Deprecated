@@ -344,7 +344,7 @@ public sealed class VisibilityComputer
 	private void AddOccluder(in Occluder occluder)
 	// HOWDO: Without sort?
 	// This only looks OK with borders.
-	// TODO: "PixelMap" ? Chop sprites up into smaller rectangles / chunks
+	// TODO: Line of sight occluded by a circle?? Or use Aseprite "slices" smarter. Or projecting a "PixelMap".
 	{
 		if (_illumer == null) throw IllumerNotSetException;
 
