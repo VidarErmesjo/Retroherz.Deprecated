@@ -71,23 +71,21 @@ public partial class RenderSystem : EntityDrawSystem
 			transformMatrix: _camera.GetViewMatrix()
 		);
 
-
-		foreach(int entityId in ActiveEntities.AsReadOnlySpan())
+		foreach(ref readonly int entityId in ActiveEntities.AsReadOnlySpan())
 		{
-			var collider = _colliderComponentMapper.Get(entityId);
-			var sprite = _spriteComponentMapper.Get(entityId);
-			var transform = _transformComponentMapper.Get(entityId);
+			(ColliderComponent Collider, SpriteComponent Sprite, TransformComponent Transform) entity = (
+				_colliderComponentMapper.Get(entityId),
+				_spriteComponentMapper.Get(entityId),
+				_transformComponentMapper.Get(entityId)
+			);
 
 			// Do not process what can not be seen
-			if (!_camera.BoundingRectangle.Intersects(Predictive.BoundingRectangle(
-				collider,
-				transform,
-				deltaTime
-			)))
+			if (!_camera.BoundingRectangle.Intersects(new RectangleF(entity.Transform.Position, entity.Collider.Size)))
 				continue;
 
-			sprite?.Draw(_spriteBatch);
-		}		
+			entity.Sprite?.Draw(_spriteBatch);
+		}
+
 		_spriteBatch.End();
 
 		// Map

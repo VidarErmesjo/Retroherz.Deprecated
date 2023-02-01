@@ -89,7 +89,7 @@ public class ColliderComponent
 	public (Vector Position, Vector Direction)[] Rays = new (Vector, Vector)[4];
 
 	public Vector Velocity { get; set; }
-	public Vector HalfExtents { get => Size / 2; }
+	public Vector HalfExtents => Size / 2;
 
 	public Vector Size
 	{

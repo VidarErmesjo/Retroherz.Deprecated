@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace Retroherz;
+/*namespace Retroherz;
 
 ref struct RefPrimitive
 {
@@ -21,4 +21,4 @@ ref struct RefPrimitive
 			Indices.Length / 3
 		);
 	}
-}
+}*/

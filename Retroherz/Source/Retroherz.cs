@@ -129,8 +129,7 @@ File name: 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Re
 				actor.Attach(new TransformComponent(position: position));
 				actor.Attach(new ColliderComponent(velocity: velocity, size: size, type: ColliderComponentType.Dynamic));
 				actor.Attach(new RayComponent(radius: randomSize * 2));
-				actor.Attach(new PointLightComponent(radius: size.Magnitude() * 2, color: Color.DarkGoldenrod));
-
+				actor.Attach(new PointLightComponent(radius: size.Magnitude() * 2, color: Color.Goldenrod));
 
 				tiles.Remove(tile);
 			}
@@ -223,9 +222,7 @@ File name: 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Re
             world = new WorldBuilder()
 			    .AddSystem(new PlayerSystem(assetsManager, camera, inputManager))
 				.AddSystem(new CameraSystem(camera, tiledMap))
-				//.AddSystem(new VisibilitySystem(camera, effect, graphics, renderTarget, spriteBatch))
 				.AddSystem(new TiledMapSystem(camera, tiledMap, tiledMapRenderer))
-                //.AddSystem(new TiledMapSystem(camera, tiledMap, tiledMapRenderer))
                 .AddSystem(new ExpirySystem())
                 .AddSystem(new ColliderSystem())
                 .AddSystem(new UpdateSystem(inputManager))
@@ -233,13 +230,11 @@ File name: 'C:\Users\Voidar\Documents\Programmering\dotnet\MonoGame\Retroherz\Re
                 .AddSystem(new RenderSystem(camera, effect, graphics, renderTarget, spriteBatch, tiledMapRenderer))
 				.AddSystem(new DebugSystem(camera, spriteBatch))
 				//.AddSystem(new MetaSystem())
-				//.AddSystem(new CameraSystem(camera, tiledMap))
 				.AddSystem(new SelectSystem(inputManager))
 				.AddSystem(new HUDSystem(camera, inputManager, spriteBatch))
                 .Build();
             world.Initialize();			
 
-			//EntityManager.Initialize(World;);
             //Components.Add(World;);
 
 			var coolNames = new List<string> {"Halsbrann Sivertsen", "Salman Rushtid"};

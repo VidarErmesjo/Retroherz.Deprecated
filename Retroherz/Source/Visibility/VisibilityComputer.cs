@@ -10,6 +10,7 @@ using Retroherz.Math;
 
 namespace Retroherz.Visibility;
 
+/*
 /// <summary>
 ///	Represents a caster of light.
 /// </summary>
@@ -17,11 +18,13 @@ public class Illumer
 {
 	public Vector Origin;
 	public float Radius;
+	public bool IsVisible;
 
-	public Illumer(Vector origin, float radius)
+	public Illumer(Vector origin, float radius, bool isVisible)
 	{
 		Origin = origin;
 		Radius = radius;
+		IsVisible = isVisible;
 	}
 }
 
@@ -34,31 +37,76 @@ public struct Occluder
 	public Vector Size;
 	public float Radius;
 	public float Distance;
-	public bool IsOccluded = false;
+	public bool IsVisible;
 
-	public Occluder(Vector position, Vector size, float radius)
+	public Occluder(Vector position, Vector size, float radius, bool isVisible)
 	{
 		Position = position;
 		Size = size;
 		Radius = radius;
+		IsVisible = isVisible;
 	}
-}
+}*/
 
 /// <summary>
 ///	Singleton that handles all visibilty related issues.
 /// </summary>
 public sealed class VisibilityComputer
 {
+	#region Private Structs & Classes
+	/// <summary>
+	///	Represents a caster of light.
+	/// </summary>
+	private class Illumer
+	{
+		//public int Id;
+
+		public Vector Origin;
+		public float Radius;
+		public bool IsVisible;
+
+		public Illumer(Vector origin, float radius, bool isVisible)
+		{
+			Origin = origin;
+			Radius = radius;
+			IsVisible = isVisible;
+		}
+	}
+
+	/// <summary>
+	///	Represents an occluder of light.
+	/// </summary>
+	private struct Occluder
+	{
+		//public int Id;
+
+		public Vector Origin;
+		public Vector HalfExtents;
+		public float Radius;
+		public bool IsVisible;
+
+		public Occluder(Vector origin, Vector halfExtents, float radius, bool isVisible)
+		{
+			Origin = origin;
+			HalfExtents = halfExtents;
+			Radius = radius;
+			IsVisible = isVisible;
+		}
+	}
+	#endregion
+
 	#region Private Fields
+	private OrthographicCamera _camera;
 	private readonly Sekk<Edge> _edges;
+	private Illumer _illumer;
 	private Sekk<Edge> _polyMap;
 	private TiledMap _tiledMap;
 	private readonly Sekk<VisibilityPolygonPoint> _visibilityPolygonPoints;
 
-	private Illumer _illumer;
-
+	private const string CAMERA_ERROR = "SetCamera() must be called prior to SetIllumer()";
 	private const string ILLUMER_ERROR = "SetIllumer() must be called prior to AddOccluder() and CalculateVisibilityPolygon().";
 	private const string TILEDMAP_ERROR = "SetTiledMap() must be called prior to SetIllumer().";
+	private Exception CameraNotSetException = new InvalidOperationException(CAMERA_ERROR);
 	private Exception IllumerNotSetException = new InvalidOperationException(ILLUMER_ERROR);
 	private Exception TiledMapNotSetException = new InvalidOperationException(TILEDMAP_ERROR);
 
@@ -71,9 +119,9 @@ public sealed class VisibilityComputer
 
 	private VisibilityComputer()
 	{
-		_edges = new Sekk<Edge>(32);
-		_polyMap = new Sekk<Edge>(32);
-		_visibilityPolygonPoints = new Sekk<VisibilityPolygonPoint>(128);
+		_edges = new Sekk<Edge>(128);
+		_polyMap = new Sekk<Edge>(128);
+		_visibilityPolygonPoints = new Sekk<VisibilityPolygonPoint>(512);
 	}
 
 	public static VisibilityComputer GetInstance() => lazy.Value;
@@ -82,52 +130,20 @@ public sealed class VisibilityComputer
 	#endregion
 
 	#region Public Methods
-	public ReadOnlySpan<Edge> GetPolyMap() => _polyMap;
-
 	/// <summary>
 	///	Adds an "Occluder" to the edges pool if within "Illumer" radius.
 	/// </summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AddOccluder(in Vector position, in Vector size, in float radius) => AddOccluder(new Occluder(position, size, radius));
-
-	/// <summary>
-	///	Adds an "Occluder" to the edges pool if within "Illumer" radius.
-	/// </summary>
-	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	public void AddOccluder(in Occluder occluder)
-	// HOWDO: Without sort?
+	public void AddOccluder(in Vector origin, in Vector halfExtents, in float radius)
 	{
-		if (_illumer == null) throw IllumerNotSetException;
-
-		// Check if "Occluder" is within "Illumer" radius.
-		if (!Visible(occluder.Position + occluder.Size / 2, occluder.Radius)) return;
-
-		// Define corners in an anti-clockwise fashion,
-		// and calculate the distances from "Illumer" to "Occluder" edge end-points.
-		Span<(Vector Point, float Distance)> corners = stackalloc (Vector Point, float Distance)[4];
-	
-		// Top left.
-		corners[0].Point = occluder.Position;
-		corners[0].Distance = Vector.DistanceSquared(corners[0].Point, _illumer.Origin);
-
-		// Top right.
-		corners[1].Point = new Vector(occluder.Position.X +  occluder.Size.X,  occluder.Position.Y);
-		corners[1].Distance = Vector.DistanceSquared(corners[1].Point, _illumer.Origin);
-
-		// Bottom right.
-		corners[2].Point =  occluder.Position +  occluder.Size;
-		corners[2].Distance = Vector.DistanceSquared(corners[2].Point, _illumer.Origin);
-
-		// Bottom left.
-		corners[3].Point = new Vector(occluder.Position.X,  occluder.Position.Y +  occluder.Size.Y);
-		corners[3].Distance = Vector.DistanceSquared(corners[3].Point, _illumer.Origin);
-
-		// Sort edges by distance.
-		corners.Sort((a, b) => a.Distance < b.Distance ? -1 : 1);
-
-		// Add the two nearest edges to edges pool.
-		_edges.Add(new Edge(start: corners[0].Point, end: corners[1].Point));
-		_edges.Add(new Edge(start: corners[0].Point, end: corners[2].Point));
+		Occluder occluder = new Occluder(
+			origin: origin,
+			halfExtents: halfExtents,
+			radius: radius,
+			isVisible: EvaluateOccluder(origin, radius)
+		);
+		
+		AddOccluder(occluder);
 	}
 
 	/// <summary>
@@ -137,6 +153,8 @@ public sealed class VisibilityComputer
 	public ReadOnlySpan<Vector> CalculateVisibilityPolygon()
 	{
 		if (_illumer == null) throw IllumerNotSetException;
+
+		if (!_illumer.IsVisible) return new ReadOnlySpan<Vector>();
 
 		_visibilityPolygonPoints.Clear();
 
@@ -248,26 +266,24 @@ public sealed class VisibilityComputer
 	}
 
 	/// <summary>
-	///	Sets the "Illumer" object and resets the system.
-	/// </summary>
-	public void SetIllumer(in Vector origin, in float radius) => SetIllumer(new Illumer(origin, radius));
+	///	Returns the "PolyMap".
+	///	</summary>
+	public ReadOnlySpan<Edge> GetPolyMap() => _polyMap;
+
+	public void SetCamera(in OrthographicCamera camera) => _camera = camera;
 
 	/// <summary>
 	///	Sets the "Illumer" object and resets the system.
 	/// </summary>
-	public void SetIllumer(in Illumer illumer)
+	public void SetIllumer(in Vector origin, in float radius)
 	{
-		if (_polyMap == null) throw TiledMapNotSetException;
+		Illumer illumer = new Illumer(
+			origin,
+			radius,
+			EvaluateIllumer(origin, radius)
+		);
 
-		// Set the "Illumer".
-		_illumer = illumer;
-
-		// Clear edges.
-		_edges.Clear();
-
-		// Add edges.
-		AddBoundary();
-		AddPolyMap();
+		SetIllumer(illumer);
 	}
 
 	/// <summary>
@@ -322,13 +338,71 @@ public sealed class VisibilityComputer
 	}
 
 	/// <summary>
+	///	Adds an "Occluder" to the edges pool if within "Illumer" radius.
+	/// </summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private void AddOccluder(in Occluder occluder)
+	// HOWDO: Without sort?
+	// This only looks OK with borders.
+	// TODO: "PixelMap" ? Chop sprites up into smaller rectangles / chunks
+	{
+		if (_illumer == null) throw IllumerNotSetException;
+
+		if (!_illumer.IsVisible) return;
+
+		if (!occluder.IsVisible) return;
+
+		// Define corners in an anti-clockwise fashion,
+		// and calculate the distances from "Illumer" to "Occluder" edge end-points.
+		Span<(Vector Point, float Distance)> corners = stackalloc (Vector Point, float Distance)[4];
+	
+		// Top left.
+		corners[0].Point = new Vector(
+			occluder.Origin.X - occluder.HalfExtents.X,
+			occluder.Origin.Y - occluder.HalfExtents.Y
+		);
+		corners[0].Distance = Vector.DistanceSquared(corners[0].Point, _illumer.Origin);
+
+		// Top right.
+		corners[1].Point = new Vector(
+			occluder.Origin.X + occluder.HalfExtents.X,
+			occluder.Origin.Y - occluder.HalfExtents.Y
+		);
+		corners[1].Distance = Vector.DistanceSquared(corners[1].Point, _illumer.Origin);
+
+		// Bottom right.
+		corners[2].Point = new Vector(
+			occluder.Origin.X + occluder.HalfExtents.X,
+			occluder.Origin.Y + occluder.HalfExtents.Y
+		);
+		corners[2].Distance = Vector.DistanceSquared(corners[2].Point, _illumer.Origin);
+
+		// Bottom left.
+		corners[3].Point = new Vector(
+			occluder.Origin.X - occluder.HalfExtents.X,
+			occluder.Origin.Y + occluder.HalfExtents.Y
+		);
+		corners[3].Distance = Vector.DistanceSquared(corners[3].Point, _illumer.Origin);
+
+		// Sort edges by distance.
+		corners.Sort((a, b) => a.Distance < b.Distance ? -1 : 1);
+
+		// Add the two nearest edges to edges pool.
+		_edges.Add(new Edge(start: corners[0].Point, end: corners[1].Point));
+		_edges.Add(new Edge(start: corners[0].Point, end: corners[2].Point));
+	}
+
+	/// <summary>
 	///	Evaluates and adds the "PolyMap" edges to the edge pool.
 	///	</summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private void AddPolyMap()
 	{
 		// Circle that represents the "Illumer".
-		Span<Circle> circle = stackalloc Circle[] { new Circle(_illumer.Origin, _illumer.Radius) };
+		Span<Circle> circle = stackalloc Circle[]
+		{
+			new Circle(_illumer.Origin, _illumer.Radius)
+		};
 
 		// Edges vs "Illumer".
 		foreach (ref readonly Edge edge in _polyMap)
@@ -337,12 +411,28 @@ public sealed class VisibilityComputer
 	}
 
 	/// <summary>
+	///	Evaluates the visibility of an "Illumer".
+	///	</summary>
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	private bool EvaluateIllumer(in Vector origin, in float radius)
+	{
+		// Circles that represents the "Illumer".
+		Span<CircleF> circle = stackalloc CircleF[]
+		{
+			new CircleF(origin, radius)
+		};
+
+		// Camera vs. "Illumer".
+		return _camera.BoundingRectangle.Intersects(circle[0]) ? true : false;
+	}
+
+	/// <summary>
 	///	Evaluates the visibility of an "Occluder".
 	///	</summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
-	private bool Visible(in Vector origin, in float radius)
+	private bool EvaluateOccluder(in Vector origin, in float radius)
 	{
-		// Circles that represent the "Illumer" and the "Occluder".
+		// Circles that represents the "Illumer" and the "Occluder".
 		Span<Circle> circle = stackalloc Circle[]
 		{
 			new Circle(_illumer.Origin, _illumer.Radius),
@@ -351,6 +441,25 @@ public sealed class VisibilityComputer
 
 		// "Illumer" vs "Occluder".
 		return circle[0].Intersects(circle[1]) ? true : false;
+	}
+
+	/// <summary>
+	///	Sets the "Illumer" object and resets the system.
+	/// </summary>
+	private void SetIllumer(in Illumer illumer)
+	{
+		if (_camera == null) throw CameraNotSetException;
+		if (_polyMap == null) throw TiledMapNotSetException;
+
+		// Set the "Illumer".
+		_illumer = illumer;
+
+		// Clear edges.
+		_edges.Clear();
+
+		// Add edges.
+		AddBoundary();
+		AddPolyMap();
 	}
 
 	#endregion

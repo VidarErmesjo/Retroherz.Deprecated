@@ -23,7 +23,7 @@ public struct Edge
 
 public static class PolyMap
 {
-	private static Sekk<Edge> _edges = new Sekk<Edge>();
+	private static Sekk<Edge> _edges = new Sekk<Edge>(128);
 
 	private struct Cell
 	{

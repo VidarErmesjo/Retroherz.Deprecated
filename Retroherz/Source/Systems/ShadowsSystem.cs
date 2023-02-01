@@ -37,8 +37,8 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 	private ComponentMapper<SpriteComponent> _spriteComponentMapper;
 	private ComponentMapper<TransformComponent> _transformComponentMapper;
 
-	public readonly Sekk<int> Occluders = new Sekk<int>();
-	public readonly Sekk<int> Illumers = new Sekk<int>();
+	public readonly Sekk<int> Occluders = new Sekk<int>(64);
+	public readonly Sekk<int> Illumers = new Sekk<int>(64);
 
 	public ShadowsSystem(GraphicsManager graphicsManager, TiledMap tiledMap)
 		: base(Aspect.All(typeof(ColliderComponent), typeof(SpriteComponent), typeof(TransformComponent)))
@@ -67,6 +67,8 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 
 	public override void Update(GameTime gameTime)
 	{
+		float deltaTime = gameTime.GetElapsedSeconds();
+
 		Occluders.Clear();
 		Illumers.Clear();
 
@@ -90,9 +92,11 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 				_transformComponentMapper.Get(illumerId)
 			);
 
+			_visibilityComputer.SetCamera(_camera);
+
 			_visibilityComputer.SetIllumer(
-				illumer.Transform.Position + illumer.Collider.HalfExtents,
-				illumer.Light.Radius
+				origin: illumer.Transform.Position + illumer.Collider.HalfExtents,
+				radius: illumer.Light.Radius
 			);
 
 			// Add "Occluders".
@@ -101,17 +105,28 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 				if (occluderId == illumerId)
 					continue;
 
-				(ColliderComponent Collider, PointLightComponent Light, TransformComponent Transform) occluder = (
+				(ColliderComponent Collider, PointLightComponent Light, SpriteComponent Sprite, TransformComponent Transform) occluder = (
 					_colliderComponentMapper.Get(occluderId),
 					_pointLightComponentMapper.Get(occluderId) ?? new PointLightComponent(),
+					_spriteComponentMapper.Get(occluderId),
 					_transformComponentMapper.Get(occluderId)
 				);
 
-				_visibilityComputer.AddOccluder(
-					occluder.Transform.Position,
-					occluder.Collider.Size,
-					occluder.Light.Radius
-				);
+				// EXP
+				foreach (var slice in occluder.Sprite.Slices)
+				{
+					_visibilityComputer.AddOccluder(
+						origin: slice.BoundingRectangle.Center,
+						halfExtents: slice.BoundingRectangle.Size / 2,
+						radius: occluder.Light.Radius
+					);
+				}
+
+				/*_visibilityComputer.AddOccluder(
+					origin: occluder.Transform.Position + occluder.Collider.HalfExtents,
+					halfExtents: occluder.Collider.HalfExtents,
+					radius: occluder.Light.Radius
+				);*/
 			}
 
 			ReadOnlySpan<Vector> points = _visibilityComputer.CalculateVisibilityPolygon();
@@ -124,6 +139,7 @@ public partial class ShadowsSystem : EntityUpdateSystem, IDrawSystem
 
 	public void Draw(GameTime gameTime)
 	{
+		float deltaTime = gameTime.GetElapsedSeconds();
 		// Draw Color
 		//_graphics.SetRenderTarget(_renderTarget.Color);
 		_graphics.Clear(Color.Transparent);

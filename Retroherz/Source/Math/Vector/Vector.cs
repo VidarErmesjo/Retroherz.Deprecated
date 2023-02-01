@@ -47,6 +47,8 @@ public struct Vector : IEquatable<Vector>
 	public static Vector operator +(Vector u, Vector v) => new(u.X + v.X, u.Y + v.Y);
 	public static Vector operator +(Vector2 u, Vector v) => new(u.X + v.X, u.Y + v.Y);
 	public static Vector operator +(Vector u, Vector2 v) => new(u.X + v.X, u.Y + v.Y);
+	public static Vector operator +(Vector u, Point2 point) => new(u.X + point.X, u.Y + point.Y);
+	public static Vector operator +(Point2 point, Vector u) => new(point.X + u.X, point.Y + u.Y);
 	public static Vector operator +(Vector vector, int value) => new(vector.X + value, vector.Y + value);
 	public static Vector operator +(Vector vector, float value) => new(vector.X + value, vector.Y + value);
 	public static Vector operator +(Vector vector, double value) => new(vector.X + ((float)value),vector.Y + ((float)value));
@@ -61,6 +63,8 @@ public struct Vector : IEquatable<Vector>
 	public static Vector operator -(Vector u, Vector v) => new(u.X - v.X, u.Y - v.Y);
 	public static Vector operator -(Vector2 u, Vector v) => new(u.X - v.X, u.Y - v.Y);
 	public static Vector operator -(Vector u, Vector2 v) => new(u.X - v.X, u.Y - v.Y);
+	public static Vector operator -(Vector u, Point2 point) => new(u.X - point.X, u.Y - point.Y);
+	public static Vector operator -(Point2 point, Vector u) => new(point.X - u.X, point.Y - u.Y);
 	public static Vector operator -(Vector vector, int value) => new(vector.X - value, vector.Y - value);
 	public static Vector operator -(Vector vector, float value) => new(vector.X - value, vector.Y - value);
 	public static Vector operator -(Vector vector, double value) => new(vector.X - ((float)value), vector.Y - ((float)value));
@@ -117,7 +121,9 @@ public struct Vector : IEquatable<Vector>
 
 	// Implicit conversion (MonoGame)
 	public static implicit operator Size2(Vector vector) => new(vector.X, vector.Y);
+	public static implicit operator Point(Vector vector) => new(((int)vector.X), ((int)vector.Y));
 	public static implicit operator Point2(Vector vector) => new(vector.X, vector.Y);
+	public static implicit operator Vector(Point point) => new(point.X, point.Y);
 	public static implicit operator Vector(Point2 point) => new(point.X, point.Y);
 	public static implicit operator Vector(Size2 size) => new(size.Width, size.Height);
 	public static implicit operator Vector(Vector2 vector) => new(vector.X, vector.Y);

@@ -14,8 +14,8 @@ public partial class ColliderSystem
 	///	</summary>
 	[MethodImpl(MethodImplOptions.AggressiveOptimization)]
 	internal static bool Collides(
-		in (ColliderComponent collider, TransformComponent transform) ego,
-		in (ColliderComponent collider, TransformComponent transform) obstacle,
+		in (ColliderComponent Collider, TransformComponent Transform) ego,
+		in (ColliderComponent Collider, TransformComponent Transform) obstacle,
 		out Vector contactPoint,
 		out Vector contactNormal,
 		out float contactTime,
@@ -27,18 +27,18 @@ public partial class ColliderSystem
 		float timeHitFar = 0;
 
 		// Check if ego is actually moving and not changing size
-		if (ego.collider.Velocity == Vector.Zero && ego.collider.DeltaHalfExtents == Vector.Zero) return false;
+		if (ego.Collider.Velocity == Vector.Zero && ego.Collider.DeltaHalfExtents == Vector.Zero) return false;
 
 		// Calculate ray Vector
 		Ray ray = new(
-			origin: ego.transform.Position + ego.collider.HalfExtents,
-			//direction: ego.collider.Velocity * deltaTime);
-			direction: (ego.collider.Velocity - obstacle.collider.Velocity) * deltaTime);	// YEAH! :P
+			origin: ego.Transform.Position + ego.Collider.HalfExtents,
+			//direction: ego.Collider.Velocity * deltaTime);
+			direction: (ego.Collider.Velocity - obstacle.Collider.Velocity) * deltaTime);	// YEAH! :P
 
 		// Expand obstacle collider rectangle by ego dimensions
 		(Vector Position, Vector Size) rectangle = (
-			obstacle.transform.Position - ego.collider.HalfExtents,
-			obstacle.collider.Size + ego.collider.Size
+			obstacle.Transform.Position - ego.Collider.HalfExtents,
+			obstacle.Collider.Size + ego.Collider.Size
 		);
 	
 		// Cast ray
@@ -49,7 +49,7 @@ public partial class ColliderSystem
 			out contactTime,
 			out timeHitFar
 		))
-			return (contactTime >= -rectangle.Size.Magnitude() && contactTime < 1); // Works??? (>= -1) .. -2 even better? :p
+			return (contactTime >= -obstacle.Collider.Size.Magnitude() && contactTime < 1); // Works??? (>= -1) .. -2 even better? :p
 		else 
 			return false;
 	}

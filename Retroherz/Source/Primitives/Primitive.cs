@@ -20,14 +20,17 @@ public struct Primitive
 	{
 		_vertices = new ReadOnlyMemory<VertexPositionTexture>(vertices.ToArray());
 		_indices = new ReadOnlyMemory<short>(indices.ToArray());
+
+		PrimitiveType = PrimitiveType.TriangleList;
 	}
 }
 
 public static partial class PrimitiveExtensions
 {
+	// TODO: Expand for different primitive types.
 	public static void Draw(this Primitive primitive, GraphicsDevice graphics)
 	{
-		if (primitive.Vertices.Length < 3)
+		if (primitive.PrimitiveType == PrimitiveType.TriangleList && primitive.Vertices.Length < 3)
 			return;
 
 		graphics.DrawUserIndexedPrimitives<VertexPositionTexture>

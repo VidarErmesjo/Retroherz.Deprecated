@@ -69,7 +69,7 @@ public class Sekk<T>: IEquatable<Sekk<T>> where T: unmanaged
 			_data = new T[size].AsMemory();
 			temp.CopyTo(_data.Span);
 
-			Console.WriteLine($"Resized [{size}]");
+			Console.WriteLine($"Resized [{size}] {typeof(T).ToString()}");
 		}
 
 		// Add the value.

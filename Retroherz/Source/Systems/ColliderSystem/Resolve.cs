@@ -14,8 +14,8 @@ public partial class ColliderSystem
 	///	</summary>
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	internal static bool Resolve(
-		in (ColliderComponent collider, TransformComponent transform) ego,
-		in (ColliderComponent collider, TransformComponent transform) obstacle,
+		in (ColliderComponent Collider, TransformComponent Transform) ego,
+		in (ColliderComponent Collider, TransformComponent Transform) obstacle,
 		in float deltaTime)
 	{
 		Vector contactPoint = Vector.Zero;
@@ -32,14 +32,14 @@ public partial class ColliderSystem
 		{
 			// Resolve diagonal freak case (single contact).
 			// - VE
-			if (contactNormal == Vector.Zero && ego.collider.Contacts.Count == 1)
+			if (contactNormal == Vector.Zero && ego.Collider.Contacts.Count == 1)
 			{
-				contactNormal = Vector.Clamp(-ego.collider.Velocity, -Vector.One, Vector.One);
+				contactNormal = Vector.Clamp(-ego.Collider.Velocity, -Vector.One, Vector.One);
 				System.Console.WriteLine("Diagonal!");
 			}
 
 			// Displace
-			ego.collider.Velocity += contactNormal * ego.collider.Velocity.Abs() * (1 - contactTime);
+			ego.Collider.Velocity += contactNormal * ego.Collider.Velocity.Abs() * (1 - contactTime);
 
 			return true;
 		}
